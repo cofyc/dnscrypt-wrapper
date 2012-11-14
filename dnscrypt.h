@@ -67,9 +67,9 @@
 
 #define DEFAULT_RESOLVER_IP "208.67.220.220:443"
 
-#include "dns-protocol.h"
 #include "edns.h"
 #include "udp_request.h"
+#include "rfc1035.h"
 #include "logger.h"
 
 struct context {
@@ -91,6 +91,9 @@ struct context {
      size_t edns_payload_size;
      bool daemonize;
      bool tcp_only;
+
+     /* Domain name shared buffer. */
+     char namebuff[MAXDNAME];
 };
 
 size_t dnscrypt_query_header_size(void);

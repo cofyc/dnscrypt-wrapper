@@ -204,7 +204,6 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     uint8_t dns_query[DNS_MAX_PACKET_SIZE_UDP];
     struct context *c = context;
     UDPRequest *udp_request;
-    ssize_t curve_ret;
     ssize_t nread;
     size_t dns_query_len = 0;
     size_t max_query_size;
@@ -285,6 +284,8 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     }
     struct dns_header *header = (struct dns_header *)dns_query;
     udp_request->id = ntohs(header->id);
+    udp_request->crc = questions_crc(header, dns_query_len, c->namebuff);
+    printf("crc: %ud\n", udp_request->crc);
     /* *INDENT-OFF* */
     sendto_with_retry(&(SendtoWithRetryCtx) {
           .udp_request = udp_request,
@@ -299,6 +300,24 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     /* *INDENT-ON* */
 }
 
+/*
+ * Find corresponding request by DNS id and crc of questions.
+ * Don't check crc if not know (0xffffffff).
+ */
+static UDPRequest *
+lookup_request(struct context *c, uint16_t id, unsigned int crc)
+{
+    UDPRequest *scanned_udp_request;
+    TAILQ_FOREACH(scanned_udp_request, &c->udp_request_queue, queue) {
+        if (id == scanned_udp_request->id
+            && (scanned_udp_request->crc == crc || crc == 0xffffffff)) {
+            return scanned_udp_request;
+            break;
+        }
+    }
+    return NULL;
+}
+
 static void
 resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
                      void *const context)
@@ -306,13 +325,11 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
     logger(LOG_INFO, "resolver to proxy cb");
     uint8_t dns_reply[DNS_MAX_PACKET_SIZE_UDP];
     struct context *c = context;
-    UDPRequest *scanned_udp_request;
     UDPRequest *udp_request = NULL;
     struct sockaddr_storage resolver_sockaddr;
     ev_socklen_t resolver_sockaddr_len = sizeof(struct sockaddr_storage);
     ssize_t nread;
     size_t dns_reply_len = (size_t) 0U;
-    size_t uncurved_len;
 
     (void)ev_flags;
 
@@ -333,21 +350,17 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
                "Received a resolver reply from a different resolver");
         return;
     }
+    dns_reply_len = nread;
 
     struct dns_header *header = (struct dns_header *)dns_reply;
     uint16_t id = ntohs(header->id);
-    TAILQ_FOREACH(scanned_udp_request, &c->udp_request_queue, queue) {
-        if (id == scanned_udp_request->id) {
-            udp_request = scanned_udp_request;
-            break;
-        }
-    }
+    unsigned int crc = questions_crc(header, dns_reply_len, c->namebuff);
+    udp_request = lookup_request(c, id, crc);
     if (udp_request == NULL) {
         logger(LOG_ERR, "Received a reply that doesn't match any active query");
         return;
     }
 
-    dns_reply_len = nread;
     sendto_with_retry(&(SendtoWithRetryCtx) {
                       .udp_request = udp_request,.handle =
                       udp_request->client_proxy_handle,.buffer =

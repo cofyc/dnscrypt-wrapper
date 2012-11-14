@@ -12,6 +12,7 @@ typedef struct UDPRequestStatus_ {
 
 typedef struct UDPRequest_ {
     uint16_t id;
+    unsigned int crc;
     uint8_t client_nonce[crypto_box_HALF_NONCEBYTES];
     TAILQ_ENTRY(UDPRequest_) queue;
     struct sockaddr_storage client_sockaddr;

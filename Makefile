@@ -18,6 +18,7 @@ LIB_OBJS += dnscrypt_server.o
 LIB_OBJS += edns.o
 LIB_OBJS += logger.o
 LIB_OBJS += main.o
+LIB_OBJS += rfc1035.o
 LIB_OBJS += argparse/argparse.o
 
 LDADD += libnacl/build/localhost/lib/local/libnacl.a
@@ -45,7 +46,7 @@ uninstall:
 
 clean:
 	$(RM) dnscrypt-wrapper
-	find . -name '*.[oa]' | xargs $(RM)
+	$(RM) *.o
 	$(RM) libnacl/.done 
 
 .PHONY: all install uninstall clean test
