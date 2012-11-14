@@ -5,7 +5,7 @@ CC = cc
 RM = rm -rf
 
 EXTRA_CFLAGS = # dynamically added/remoted
-CFLAGS = -std=c99 -pedantic -Wall $(EXTRA_CFLAGS) -Ilibevent/include
+CFLAGS = -std=c99 -pedantic -Wall $(EXTRA_CFLAGS) -Ilibevent/include -Ilibnacl/build/localhost/include/local
 LDFLAGS = -lm
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
@@ -14,6 +14,7 @@ LIB_H = dnscrypt.h udp_request.h edns.h argparse/argparse.h logger.h
 
 LIB_OBJS += dnscrypt.o
 LIB_OBJS += udp_request.o
+LIB_OBJS += dnscrypt_server.o
 LIB_OBJS += edns.o
 LIB_OBJS += logger.o
 LIB_OBJS += main.o
@@ -45,5 +46,6 @@ uninstall:
 clean:
 	$(RM) dnscrypt-wrapper
 	find . -name '*.[oa]' | xargs $(RM)
+	$(RM) libnacl/.done 
 
 .PHONY: all install uninstall clean test

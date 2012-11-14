@@ -283,20 +283,20 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
         proxy_client_send_truncated(udp_request, dns_query, dns_query_len);
         return;
     }
-
-    /*printf("nonce: "); */
-    /*for (int i = 0; i < crypto_box_HALF_NONCEBYTES; i++) { */
-    /*printf("%x ", udp_request->client_nonce[i]); */
-    /*} */
-    /*printf("\n"); */
-
+    struct dns_header *header = (struct dns_header *)dns_query;
+    udp_request->id = ntohs(header->id);
+    /* *INDENT-OFF* */
     sendto_with_retry(&(SendtoWithRetryCtx) {
-                      .udp_request = udp_request,.handle =
-                      c->udp_resolver_handle,.buffer = dns_query,.length =
-                      dns_query_len,.flags = 0,.dest_addr =
-                      (struct sockaddr *)&c->resolver_sockaddr,.dest_len =
-                      c->resolver_sockaddr_len,.cb =
-                      client_to_proxy_cb_sendto_cb});
+          .udp_request = udp_request,
+          .handle = c->udp_resolver_handle,
+          .buffer = dns_query,
+          .length = dns_query_len,
+          .flags = 0,
+          .dest_addr = (struct sockaddr *)&c->resolver_sockaddr,
+          .dest_len = c->resolver_sockaddr_len,
+          .cb = client_to_proxy_cb_sendto_cb}
+        );
+    /* *INDENT-ON* */
 }
 
 static void
@@ -334,10 +334,10 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
         return;
     }
 
+    struct dns_header *header = (struct dns_header *)dns_reply;
+    uint16_t id = ntohs(header->id);
     TAILQ_FOREACH(scanned_udp_request, &c->udp_request_queue, queue) {
-        if (dnscrypt_cmp_client_nonce
-            (scanned_udp_request->client_nonce, dns_reply,
-             (size_t) nread) == 0) {
+        if (id == scanned_udp_request->id) {
             udp_request = scanned_udp_request;
             break;
         }
