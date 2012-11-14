@@ -25,10 +25,13 @@ LDADD += libevent/.libs/libevent.a
 argparse/argparse.o:
 	@make -C argparse argparse.o
 
-libnacl/.done:
+libnacl/build/localhost/lib/local/libnacl.a:
 	@make -C libnacl
 
-all:: libnacl/.done dnscrypt-wrapper
+libevent/.libs/libevent.a:
+	@make -C libevent
+
+all:: dnscrypt-wrapper
 
 dnscrypt-wrapper: $(LIB_OBJS) $(LDADD)
 	$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $^

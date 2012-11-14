@@ -5,3 +5,8 @@
 /libnacl/.done
 /libnacl/build/
 /dnscrypt-wrapper
+/libevent/*.lo
+/libevent/*.la
+/libevent/sample/
+/libevent/test/
+/libevent/.libs/
