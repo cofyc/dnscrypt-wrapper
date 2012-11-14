@@ -5,17 +5,17 @@
  */
 
 static int
-sockaddr_from_ip_and_port(struct sockaddr_storage * const sockaddr,
-        ev_socklen_t * const sockaddr_len_p,
-        const char * const ip, const char * const port,
-        const char * const error_msg)
+sockaddr_from_ip_and_port(struct sockaddr_storage *const sockaddr,
+                          ev_socklen_t * const sockaddr_len_p,
+                          const char *const ip, const char *const port,
+                          const char *const error_msg)
 {
-    char   sockaddr_port[INET6_ADDRSTRLEN + sizeof "[]:65535"];
-    int    sockaddr_len_int;
-    char  *pnt;
-    _Bool  has_column = 0;
-    _Bool  has_columns = 0;
-    _Bool  has_brackets = *ip == '[';
+    char sockaddr_port[INET6_ADDRSTRLEN + sizeof "[]:65535"];
+    int sockaddr_len_int;
+    char *pnt;
+    _Bool has_column = 0;
+    _Bool has_columns = 0;
+    _Bool has_brackets = *ip == '[';
 
     if ((pnt = strchr(ip, ':')) != NULL) {
         has_column = 1;
@@ -23,23 +23,22 @@ sockaddr_from_ip_and_port(struct sockaddr_storage * const sockaddr,
             has_columns = 1;
         }
     }
-    sockaddr_len_int = (int) sizeof *sockaddr;
+    sockaddr_len_int = (int)sizeof *sockaddr;
     if ((has_brackets != 0 || has_column != has_columns) &&
-            evutil_parse_sockaddr_port(ip, (struct sockaddr *) sockaddr,
-                &sockaddr_len_int) == 0) {
+        evutil_parse_sockaddr_port(ip, (struct sockaddr *)sockaddr,
+                                   &sockaddr_len_int) == 0) {
         *sockaddr_len_p = (ev_socklen_t) sockaddr_len_int;
         return 0;
     }
     if (has_columns != 0 && has_brackets == 0) {
         evutil_snprintf(sockaddr_port, sizeof sockaddr_port, "[%s]:%s",
-                ip, port);
+                        ip, port);
     } else {
-        evutil_snprintf(sockaddr_port, sizeof sockaddr_port, "%s:%s",
-                ip, port);
+        evutil_snprintf(sockaddr_port, sizeof sockaddr_port, "%s:%s", ip, port);
     }
-    sockaddr_len_int = (int) sizeof *sockaddr;
-    if (evutil_parse_sockaddr_port(sockaddr_port, (struct sockaddr *) sockaddr,
-                &sockaddr_len_int) != 0) {
+    sockaddr_len_int = (int)sizeof *sockaddr;
+    if (evutil_parse_sockaddr_port(sockaddr_port, (struct sockaddr *)sockaddr,
+                                   &sockaddr_len_int) != 0) {
         logger(LOG_ERR, "%s: %s", error_msg, sockaddr_port);
         *sockaddr_len_p = (ev_socklen_t) 0U;
 
@@ -67,24 +66,21 @@ context_init(struct context *c)
     }
 
     if (sockaddr_from_ip_and_port(&c->resolver_sockaddr,
-                &c->resolver_sockaddr_len,
-                c->resolver_ip,
-                "443",
-                "Unsupported resolver address") != 0) {
+                                  &c->resolver_sockaddr_len,
+                                  c->resolver_ip,
+                                  "443", "Unsupported resolver address") != 0) {
         return -1;
     }
 
     if (sockaddr_from_ip_and_port(&c->local_sockaddr,
-                &c->local_sockaddr_len,
-                c->local_ip,
-                "53",
-                "Unsupported local address") != 0) {
+                                  &c->local_sockaddr_len,
+                                  c->local_ip,
+                                  "53", "Unsupported local address") != 0) {
         return -1;
     }
 
     return 0;
 }
-
 
 int
 main(int argc, const char **argv)

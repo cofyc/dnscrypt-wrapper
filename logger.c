@@ -5,26 +5,26 @@ int logger_verbosity = LOG_DEBUG;
 char *logger_logfile = NULL;
 
 // prioritynames (from <syslog.h>)
-#define	INTERNAL_NOPRI	0x10	/* the "no priority" priority */
+#define	INTERNAL_NOPRI	0x10    /* the "no priority" priority */
 typedef struct _code {
-	const char	*c_name;
-	int		c_val;
+    const char *c_name;
+    int c_val;
 } CODE;
 
 CODE prioritynames[] = {
-	{ "alert",	LOG_ALERT,	},
-	{ "crit",	LOG_CRIT,	},
-	{ "debug",	LOG_DEBUG,	},
-	{ "emerg",	LOG_EMERG,	},
-	{ "err",	LOG_ERR,	},
-	{ "error",	LOG_ERR,	},	/* DEPRECATED */
-	{ "info",	LOG_INFO,	},
-	{ "none",	INTERNAL_NOPRI,	},	/* INTERNAL */
-	{ "notice",	LOG_NOTICE,	},
-	{ "panic", 	LOG_EMERG,	},	/* DEPRECATED */
-	{ "warn",	LOG_WARNING,	},	/* DEPRECATED */
-	{ "warning",	LOG_WARNING,	},
-	{ NULL,		-1,		}
+    {"alert", LOG_ALERT,},
+    {"crit", LOG_CRIT,},
+    {"debug", LOG_DEBUG,},
+    {"emerg", LOG_EMERG,},
+    {"err", LOG_ERR,},
+    {"error", LOG_ERR,},        /* DEPRECATED */
+    {"info", LOG_INFO,},
+    {"none", INTERNAL_NOPRI,},  /* INTERNAL */
+    {"notice", LOG_NOTICE,},
+    {"panic", LOG_EMERG,},      /* DEPRECATED */
+    {"warn", LOG_WARNING,},     /* DEPRECATED */
+    {"warning", LOG_WARNING,},
+    {NULL, -1,}
 };
 
 void

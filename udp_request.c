@@ -1,18 +1,18 @@
 #include "dnscrypt.h"
 
 typedef struct SendtoWithRetryCtx_ {
-    void (*cb)            (UDPRequest *udp_request);
-    const void            *buffer;
-    UDPRequest            *udp_request;
+    void (*cb) (UDPRequest * udp_request);
+    const void *buffer;
+    UDPRequest *udp_request;
     const struct sockaddr *dest_addr;
-    evutil_socket_t        handle;
-    size_t                 length;
-    ev_socklen_t           dest_len;
-    int                    flags;
+    evutil_socket_t handle;
+    size_t length;
+    ev_socklen_t dest_len;
+    int flags;
 } SendtoWithRetryCtx;
 
 /* Forward declarations. */
-static int sendto_with_retry(SendtoWithRetryCtx *const ctx);
+static int sendto_with_retry(SendtoWithRetryCtx * const ctx);
 
 #ifndef UDP_BUFFER_SIZE
 # define UDP_BUFFER_SIZE 2097152
@@ -34,16 +34,16 @@ udp_tune(evutil_socket_t const handle)
     if (handle == -1) {
         return;
     }
-    setsockopt(handle, SOL_SOCKET, SO_RCVBUFFORCE,
-               (void *) (int []) { UDP_BUFFER_SIZE }, sizeof (int));
-    setsockopt(handle, SOL_SOCKET, SO_SNDBUFFORCE,
-               (void *) (int []) { UDP_BUFFER_SIZE }, sizeof (int));
+    setsockopt(handle, SOL_SOCKET, SO_RCVBUFFORCE, (void *)(int[]) {
+               UDP_BUFFER_SIZE}, sizeof(int));
+    setsockopt(handle, SOL_SOCKET, SO_SNDBUFFORCE, (void *)(int[]) {
+               UDP_BUFFER_SIZE}, sizeof(int));
 #if defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DONT)
-    setsockopt(handle, IPPROTO_IP, IP_MTU_DISCOVER,
-               (void *) (int []) { IP_PMTUDISC_DONT }, sizeof (int));
+    setsockopt(handle, IPPROTO_IP, IP_MTU_DISCOVER, (void *)(int[]) {
+               IP_PMTUDISC_DONT}, sizeof(int));
 #elif defined(IP_DONTFRAG)
-    setsockopt(handle, IPPROTO_IP, IP_DONTFRAG,
-               (void *) (int []) { 0 }, sizeof (int));
+    setsockopt(handle, IPPROTO_IP, IP_DONTFRAG, (void *)(int[]) {
+               0}, sizeof(int));
 #endif
 }
 
@@ -58,7 +58,7 @@ udp_request_kill(UDPRequest * const udp_request)
 {
     if (udp_request == NULL || udp_request->status.is_dying)
         return;
-    
+
     udp_request->status.is_dying = 1;
 
     // free
@@ -72,7 +72,7 @@ udp_request_kill(UDPRequest * const udp_request)
         event_free(udp_request->timeout_timer);
         udp_request->timeout_timer = NULL;
     }
-    
+
     c = udp_request->context;
     if (udp_request->status.is_in_queue != 0) {
         assert(!TAILQ_EMPTY(&c->udp_request_queue));
@@ -90,7 +90,7 @@ udp_listener_kill_oldest_request(struct context *c)
 {
     if (TAILQ_EMPTY(&c->udp_request_queue))
         return -1;
-    
+
     udp_request_kill(TAILQ_FIRST(&c->udp_request_queue));
 
     return 0;
@@ -98,26 +98,26 @@ udp_listener_kill_oldest_request(struct context *c)
 
 static void
 sendto_with_retry_timer_cb(evutil_socket_t retry_timer_handle, short ev_flags,
-                           void * const ctx_)
-{       
-    SendtoWithRetryCtx * const ctx = ctx_;
-        
-    (void) ev_flags;
+                           void *const ctx_)
+{
+    SendtoWithRetryCtx *const ctx = ctx_;
+
+    (void)ev_flags;
     assert(retry_timer_handle ==
            event_get_fd(ctx->udp_request->sendto_retry_timer));
-            
+
     sendto_with_retry(ctx);
-}       
+}
 
 static int
-sendto_with_retry(SendtoWithRetryCtx *const ctx)
+sendto_with_retry(SendtoWithRetryCtx * const ctx)
 {
-    void              (*cb)(UDPRequest *udp_request);
+    void (*cb) (UDPRequest * udp_request);
     SendtoWithRetryCtx *ctx_cb;
-    UDPRequest         *udp_request = ctx->udp_request;
-    int                 err; 
-    _Bool               retriable;
-        
+    UDPRequest *udp_request = ctx->udp_request;
+    int err;
+    _Bool retriable;
+
     if (sendto(ctx->handle, ctx->buffer, ctx->length, ctx->flags,
                ctx->dest_addr, ctx->dest_len) == (ssize_t) ctx->length) {
         cb = ctx->cb;
@@ -172,7 +172,7 @@ sendto_with_retry(SendtoWithRetryCtx *const ctx)
         *ctx_cb = *ctx;
     }
     const struct timeval tv = {
-        .tv_sec = (time_t) UDP_DELAY_BETWEEN_RETRIES, .tv_usec = 0
+        .tv_sec = (time_t) UDP_DELAY_BETWEEN_RETRIES,.tv_usec = 0
     };
     evtimer_add(udp_request->sendto_retry_timer, &tv);
     return -1;
@@ -188,19 +188,17 @@ proxy_client_send_truncated(UDPRequest * const udp_request,
     dns_reply[DNS_OFFSET_FLAGS] |= DNS_FLAGS_TC | DNS_FLAGS_QR;
     dns_reply[DNS_OFFSET_FLAGS2] |= DNS_FLAGS2_RA;
     sendto_with_retry(&(SendtoWithRetryCtx) {
-            .udp_request = udp_request,
-            .handle = udp_request->client_proxy_handle,
-            .buffer = dns_reply,
-            .length = dns_reply_len,
-            .flags = 0,
-            .dest_addr = (struct sockaddr *)&udp_request->client_sockaddr,
-            .dest_len = udp_request->client_sockaddr_len,
-            .cb = udp_request_kill
-        });
+                      .udp_request = udp_request,.handle =
+                      udp_request->client_proxy_handle,.buffer =
+                      dns_reply,.length = dns_reply_len,.flags = 0,.dest_addr =
+                      (struct sockaddr *)&udp_request->
+                      client_sockaddr,.dest_len =
+                      udp_request->client_sockaddr_len,.cb = udp_request_kill});
 }
 
 static void
-client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags, void * const context)
+client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
+                   void *const context)
 {
     logger(LOG_INFO, "client to proxy cb");
     uint8_t dns_query[DNS_MAX_PACKET_SIZE_UDP];
@@ -224,21 +222,21 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags, void * c
     udp_request->timeout_timer = NULL;
     udp_request->client_proxy_handle = client_proxy_handle;
     udp_request->client_sockaddr_len = sizeof(udp_request->client_sockaddr);
-    nread = recvfrom(client_proxy_handle, 
-                     (void *)dns_query, 
-                     sizeof(dns_query), 
-                     0, 
+    nread = recvfrom(client_proxy_handle,
+                     (void *)dns_query,
+                     sizeof(dns_query),
+                     0,
                      (struct sockaddr *)&udp_request->client_sockaddr,
                      &udp_request->client_sockaddr_len);
     if (nread < 0) {
         const int err = evutil_socket_geterror(client_proxy_handle);
-        logger(LOG_WARNING, "recvfrom(client): [%s]", evutil_socket_error_to_string(err));
+        logger(LOG_WARNING, "recvfrom(client): [%s]",
+               evutil_socket_error_to_string(err));
         udp_request_kill(udp_request);
         return;
     }
 
-    if (nread < (ssize_t)DNS_HEADER_SIZE
-            || nread > sizeof(dns_query)) {
+    if (nread < (ssize_t) DNS_HEADER_SIZE || nread > sizeof(dns_query)) {
         logger(LOG_WARNING, "Short query received");
         free(udp_request);
         return;
@@ -253,10 +251,11 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags, void * c
     TAILQ_INSERT_TAIL(&c->udp_request_queue, udp_request, queue);
     memset(&udp_request->status, 0, sizeof(udp_request->status));
     udp_request->status.is_in_queue = 1;
-    dns_query_len = (size_t)nread;
+    dns_query_len = (size_t) nread;
     assert(dns_query_len <= sizeof(dns_query));
-    
-    edns_add_section(c, dns_query, &dns_query_len, sizeof(dns_query), &request_edns_payload_size);
+
+    edns_add_section(c, dns_query, &dns_query_len, sizeof(dns_query),
+                     &request_edns_payload_size);
 
     if (request_edns_payload_size < DNS_MAX_PACKET_SIZE_UDP_SEND) {
         max_query_size = DNS_MAX_PACKET_SIZE_UDP_SEND;
@@ -272,9 +271,11 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags, void * c
         proxy_client_send_truncated(udp_request, dns_query, dns_query_len);
         return;
     }
-    assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - dnscrypt_query_header_size() > dns_query_len);
+    assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - dnscrypt_query_header_size() >
+           dns_query_len);
 
-    size_t max_len = dns_query_len + DNSCRYPT_MAX_PADDING + dnscrypt_query_header_size(); 
+    size_t max_len =
+        dns_query_len + DNSCRYPT_MAX_PADDING + dnscrypt_query_header_size();
     if (max_len > max_query_size) {
         max_len = max_query_size;
     }
@@ -283,21 +284,24 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags, void * c
         return;
     }
 
+    /*printf("nonce: "); */
+    /*for (int i = 0; i < crypto_box_HALF_NONCEBYTES; i++) { */
+    /*printf("%x ", udp_request->client_nonce[i]); */
+    /*} */
+    /*printf("\n"); */
 
-    sendto_with_retry(& (SendtoWithRetryCtx) {
-        .udp_request = udp_request,
-        .handle = c->udp_resolver_handle,
-        .buffer = dns_query,
-        .length = dns_query_len,
-        .flags = 0,
-        .dest_addr = (struct sockaddr *) &c->resolver_sockaddr,
-        .dest_len = c->resolver_sockaddr_len,
-        .cb = client_to_proxy_cb_sendto_cb
-    });
+    sendto_with_retry(&(SendtoWithRetryCtx) {
+                      .udp_request = udp_request,.handle =
+                      c->udp_resolver_handle,.buffer = dns_query,.length =
+                      dns_query_len,.flags = 0,.dest_addr =
+                      (struct sockaddr *)&c->resolver_sockaddr,.dest_len =
+                      c->resolver_sockaddr_len,.cb =
+                      client_to_proxy_cb_sendto_cb});
 }
 
 static void
-resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags, void * const context)
+resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
+                     void *const context)
 {
     logger(LOG_INFO, "resolver to proxy cb");
     uint8_t dns_reply[DNS_MAX_PACKET_SIZE_UDP];
@@ -307,44 +311,50 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags, void
     struct sockaddr_storage resolver_sockaddr;
     ev_socklen_t resolver_sockaddr_len = sizeof(struct sockaddr_storage);
     ssize_t nread;
-    size_t dns_reply_len = (size_t)0U;
+    size_t dns_reply_len = (size_t) 0U;
     size_t uncurved_len;
 
     (void)ev_flags;
 
-    nread = recvfrom(proxy_resolver_handle, 
+    nread = recvfrom(proxy_resolver_handle,
                      (void *)dns_reply, sizeof(dns_reply), 0,
                      (struct sockaddr *)&resolver_sockaddr,
                      &resolver_sockaddr_len);
     if (nread < 0) {
         const int err = evutil_socket_geterror(proxy_resolver_handle);
-        logger(LOG_WARNING, "recvfrom(resolver): [%s]", evutil_socket_error_to_string(err));
+        logger(LOG_WARNING, "recvfrom(resolver): [%s]",
+               evutil_socket_error_to_string(err));
         return;
     }
     if (evutil_sockaddr_cmp((const struct sockaddr *)&resolver_sockaddr,
                             (const struct sockaddr *)
                             &c->resolver_sockaddr, 1) != 0) {
-        logger(LOG_WARNING, "Received a resolver reply from a different resolver");
+        logger(LOG_WARNING,
+               "Received a resolver reply from a different resolver");
         return;
     }
 
-
     TAILQ_FOREACH(scanned_udp_request, &c->udp_request_queue, queue) {
-        udp_request = scanned_udp_request;
-        break;
+        if (dnscrypt_cmp_client_nonce
+            (scanned_udp_request->client_nonce, dns_reply,
+             (size_t) nread) == 0) {
+            udp_request = scanned_udp_request;
+            break;
+        }
+    }
+    if (udp_request == NULL) {
+        logger(LOG_ERR, "Received a reply that doesn't match any active query");
+        return;
     }
 
     dns_reply_len = nread;
-    sendto_with_retry(& (SendtoWithRetryCtx) {
-            .udp_request = udp_request,
-            .handle = udp_request->client_proxy_handle,
-            .buffer = dns_reply,
-            .length = dns_reply_len,
-            .flags = 0,
-            .dest_addr = (struct sockaddr *) &udp_request->client_sockaddr,
-            .dest_len = udp_request->client_sockaddr_len,
-            .cb = udp_request_kill
-        });
+    sendto_with_retry(&(SendtoWithRetryCtx) {
+                      .udp_request = udp_request,.handle =
+                      udp_request->client_proxy_handle,.buffer =
+                      dns_reply,.length = dns_reply_len,.flags = 0,.dest_addr =
+                      (struct sockaddr *)&udp_request->
+                      client_sockaddr,.dest_len =
+                      udp_request->client_sockaddr_len,.cb = udp_request_kill});
 }
 
 int
@@ -353,15 +363,20 @@ udp_listern_bind(struct context *c)
     // listen socket & bind
     assert(c->udp_listener_handle == -1);
 
-    if ((c->udp_listener_handle = socket(c->local_sockaddr.ss_family, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+    if ((c->udp_listener_handle =
+         socket(c->local_sockaddr.ss_family, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
         logger(LOG_ERR, "Unable to create a socket (UDP)");
         return -1;
     }
 
     evutil_make_socket_closeonexec(c->udp_listener_handle);
     evutil_make_socket_nonblocking(c->udp_listener_handle);
-    if (bind(c->udp_listener_handle, (struct sockaddr *)&c->local_sockaddr, c->local_sockaddr_len) != 0) {
-        logger(LOG_ERR, "Unable to bind (UDP) [%s]", evutil_socket_error_to_string(evutil_socket_geterror(c->udp_listener_handle)));
+    if (bind
+        (c->udp_listener_handle, (struct sockaddr *)&c->local_sockaddr,
+         c->local_sockaddr_len) != 0) {
+        logger(LOG_ERR, "Unable to bind (UDP) [%s]",
+               evutil_socket_error_to_string(evutil_socket_geterror
+                                             (c->udp_listener_handle)));
         evutil_closesocket(c->udp_listener_handle);
         c->udp_listener_handle = -1;
         return -1;
@@ -371,7 +386,9 @@ udp_listern_bind(struct context *c)
 
     // resolver socket
     assert(c->udp_resolver_handle == -1);
-    if ((c->udp_resolver_handle = socket(c->resolver_sockaddr.ss_family, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+    if ((c->udp_resolver_handle =
+         socket(c->resolver_sockaddr.ss_family, SOCK_DGRAM,
+                IPPROTO_UDP)) == -1) {
         logger(LOG_ERR, "Unable to create a socket to the resolver");
         evutil_closesocket(c->udp_resolver_handle);
         c->udp_listener_handle = -1;
@@ -399,7 +416,9 @@ int
 udp_listener_start(struct context *c)
 {
     assert(c->udp_listener_handle != -1);
-    if ((c->udp_listener_event = event_new(c->event_loop, c->udp_listener_handle, EV_READ | EV_PERSIST, client_to_proxy_cb, c)) == NULL) {
+    if ((c->udp_listener_event =
+         event_new(c->event_loop, c->udp_listener_handle, EV_READ | EV_PERSIST,
+                   client_to_proxy_cb, c)) == NULL) {
         return -1;
     }
     if (event_add(c->udp_listener_event, NULL) != 0) {
@@ -408,7 +427,9 @@ udp_listener_start(struct context *c)
     }
 
     assert(c->udp_resolver_handle != -1);
-    if ((c->udp_resolver_event = event_new(c->event_loop, c->udp_resolver_handle, EV_READ | EV_PERSIST, resolver_to_proxy_cb, c)) == NULL) {
+    if ((c->udp_resolver_event =
+         event_new(c->event_loop, c->udp_resolver_handle, EV_READ | EV_PERSIST,
+                   resolver_to_proxy_cb, c)) == NULL) {
         udp_listener_stop(c);
         return -1;
     }

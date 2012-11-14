@@ -27,6 +27,7 @@
 #include <wchar.h>
 #include <wctype.h>
 
+#include <unistd.h>
 #include <sys/time.h>
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[1]))

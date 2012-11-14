@@ -10,7 +10,7 @@
 #include "edns.h"
 #include "udp_request.h"
 #include "logger.h"
-        
+
 #define DNS_QUERY_TIMEOUT 10
 
 #define DNS_MAX_PACKET_SIZE_UDP_RECV (65536U - 20U - 8U)
@@ -21,7 +21,7 @@
 #else
 # define DNS_MAX_PACKET_SIZE_UDP DNS_MAX_PACKET_SIZE_UDP_SEND
 #endif
-    
+
 #ifndef DNS_DEFAULT_STANDARD_DNS_PORT
 # define DNS_DEFAULT_STANDARD_DNS_PORT "53"
 #endif
@@ -36,7 +36,7 @@
 #define DNS_FLAGS_TC      2U
 #define DNS_FLAGS_QR    128U
 #define DNS_FLAGS2_RA   128U
-    
+
 #define DNS_CLASS_IN      1U
 #define DNS_TYPE_TXT     16U
 #define DNS_TYPE_OPT     41U
@@ -72,47 +72,53 @@
 #define DEFAULT_RESOLVER_IP "208.67.220.220:443"
 
 typedef struct UDPRequestStatus_ {
-    _Bool is_dying : 1;
-    _Bool is_in_queue : 1;                    
+    _Bool is_dying:1;
+    _Bool is_in_queue:1;
 } UDPRequestStatus;
 
 typedef struct UDPRequest_ {
-    uint8_t                  client_nonce[crypto_box_HALF_NONCEBYTES];
-    TAILQ_ENTRY(UDPRequest_) queue;
-    struct sockaddr_storage  client_sockaddr;
-    struct context            *context;
-    struct event            *sendto_retry_timer;
-    struct event            *timeout_timer;
-    evutil_socket_t          client_proxy_handle;
-    ev_socklen_t             client_sockaddr_len;
-    UDPRequestStatus         status;
-    unsigned char            retries;
+    uint8_t client_nonce[crypto_box_HALF_NONCEBYTES];
+            TAILQ_ENTRY(UDPRequest_) queue;
+    struct sockaddr_storage client_sockaddr;
+    struct context *context;
+    struct event *sendto_retry_timer;
+    struct event *timeout_timer;
+    evutil_socket_t client_proxy_handle;
+    ev_socklen_t client_sockaddr_len;
+    UDPRequestStatus status;
+    unsigned char retries;
 } UDPRequest;
 
-typedef TAILQ_HEAD(TCPRequestQueue_, TCPRequest_) TCPRequestQueue;
-typedef TAILQ_HEAD(UDPRequestQueue_, UDPRequest_) UDPRequestQueue;
+typedef
+TAILQ_HEAD(TCPRequestQueue_, TCPRequest_)
+    TCPRequestQueue;
+     typedef TAILQ_HEAD(UDPRequestQueue_, UDPRequest_)
+        UDPRequestQueue;
 
-struct context {
-    struct sockaddr_storage local_sockaddr;
-    struct sockaddr_storage resolver_sockaddr;
-    ev_socklen_t             local_sockaddr_len;
-    ev_socklen_t             resolver_sockaddr_len;
-    const char  *resolver_ip;
-    const char  *local_ip;
-    struct event *udp_listener_event;
-    struct event *udp_resolver_event;
-    evutil_socket_t udp_listener_handle;
-    evutil_socket_t udp_resolver_handle;
-    TCPRequestQueue tcp_request_queue;
-    UDPRequestQueue udp_request_queue;
-    struct event_base *event_loop;
-    unsigned int connections;
-    unsigned int connections_max;
-    size_t                   edns_payload_size;
-    bool daemonize;
-    bool tcp_only;
-};
+     struct context {
+         struct sockaddr_storage local_sockaddr;
+         struct sockaddr_storage resolver_sockaddr;
+         ev_socklen_t local_sockaddr_len;
+         ev_socklen_t resolver_sockaddr_len;
+         const char *resolver_ip;
+         const char *local_ip;
+         struct event *udp_listener_event;
+         struct event *udp_resolver_event;
+         evutil_socket_t udp_listener_handle;
+         evutil_socket_t udp_resolver_handle;
+         TCPRequestQueue tcp_request_queue;
+         UDPRequestQueue udp_request_queue;
+         struct event_base *event_loop;
+         unsigned int connections;
+         unsigned int connections_max;
+         size_t edns_payload_size;
+         bool daemonize;
+         bool tcp_only;
+     };
 
-size_t dnscrypt_query_header_size(void);
+     size_t dnscrypt_query_header_size(void);
+     int dnscrypt_cmp_client_nonce(const uint8_t
+                                   client_nonce[crypto_box_HALF_NONCEBYTES],
+                                   const uint8_t * const buf, const size_t len);
 
 #endif
