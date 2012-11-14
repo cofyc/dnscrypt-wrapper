@@ -1,0 +1,1 @@
+gcc -std=gnu99  -D_FORTIFY_SOURCE=2 -I/usr/local/include -g -O2 -fPIC -fPIE -fwrapv -fno-strict-aliasing -fno-strict-overflow -fstack-protector-all -Winit-self -Wwrite-strings -Wdiv-by-zero

@@ -1,0 +1,7 @@
+*.[aos]
+*.out
+*~
+/tags
+/libnacl/.done
+/libnacl/build/
+/dnscrypt-wrapper
