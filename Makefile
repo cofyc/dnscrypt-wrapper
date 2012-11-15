@@ -5,7 +5,7 @@ CC = cc
 RM = rm -rf
 
 EXTRA_CFLAGS = # dynamically added/remoted
-CFLAGS = -std=c99 -pedantic -Wall $(EXTRA_CFLAGS) -Ilibevent/include -Ilibnacl/build/localhost/include/local
+CFLAGS = -O2 -std=c99 -pedantic -Wall $(EXTRA_CFLAGS) -Ilibevent/include -Ilibnacl/build/localhost/include/local
 LDFLAGS = -lm
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin

@@ -75,8 +75,8 @@ struct context {
      struct sockaddr_storage resolver_sockaddr;
      ev_socklen_t local_sockaddr_len;
      ev_socklen_t resolver_sockaddr_len;
-     const char *resolver_ip;
-     const char *local_ip;
+     const char *resolver_address;
+     const char *listen_address;
      struct event *udp_listener_event;
      struct event *udp_resolver_event;
      evutil_socket_t udp_listener_handle;
@@ -87,11 +87,18 @@ struct context {
      unsigned int connections;
      unsigned int connections_max;
      size_t edns_payload_size;
-     bool daemonize;
-     bool tcp_only;
 
      /* Domain name shared buffer. */
      char namebuff[MAXDNAME];
+
+     /* Process stuff. */
+     bool daemonize;
+     bool tcp_only;
+     char *user;
+     uid_t user_id;
+     gid_t user_group;
+     char *user_dir;
+     char *logfile;
 };
 
 size_t dnscrypt_query_header_size(void);

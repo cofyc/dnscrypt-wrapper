@@ -59,7 +59,7 @@ logger_lograw(int priority, const char *msg)
     if (priority < 0 || priority > LOG_PRIMASK)
         priority = INTERNAL_NOPRI;
 
-    fp = (logger_logfile == NULL) ? stderr : fopen(logger_logfile, "a");
+    fp = (logger_logfile == NULL) ? stdout : fopen(logger_logfile, "a");
     if (!fp)
         return;
 
