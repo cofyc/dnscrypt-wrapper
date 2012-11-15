@@ -24,7 +24,10 @@ LIB_OBJS += argparse/argparse.o
 LDADD += libnacl/build/localhost/lib/local/libnacl.a
 LDADD += libevent/.libs/libevent.a
 
-argparse/argparse.o:
+argparse/.git:
+	@git submodule update --init
+
+argparse/argparse.o: argparse/.git
 	@make -C argparse argparse.o
 
 libnacl/build/localhost/lib/local/libnacl.a:

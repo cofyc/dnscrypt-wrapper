@@ -1,7 +1,6 @@
 #include "dnscrypt.h"
-
 /**
- * This is dnscrypt wrapper, which enable dnscrypt support for any dns server.
+ * This is dnscrypt wrapper, which enables dnscrypt support for any dns server.
  */
 
 static int
