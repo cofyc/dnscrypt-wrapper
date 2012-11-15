@@ -1,7 +1,25 @@
 #include "dnscrypt.h"
+#include "argparse/argparse.h"
 /**
  * This is dnscrypt wrapper, which enables dnscrypt support for any dns server.
  */
+
+static const char *const config_usage[] = { 
+    "dnscrypt-wrapper [options]",
+    NULL
+};
+
+static bool daemonize = 0;
+static char *listen_address = NULL;
+static char *resolver_address = NULL;
+static struct argparse argparse;
+static struct argparse_option options[] = {
+    OPT_HELP(),
+    OPT_BOOLEAN('d', "daemonize", &daemonize, "run as daemon (default: off)"),
+    OPT_STRING('a', "listen-address", &listen_address, "local address to listen (default: 0.0.0.0:53)"),
+    OPT_STRING('r', "resolver-address", &resolver_address, "upstream dns resolver server (<ipaddress:port>)"),
+    OPT_END(),
+};
 
 static int
 sockaddr_from_ip_and_port(struct sockaddr_storage *const sockaddr,
@@ -52,8 +70,8 @@ static int
 context_init(struct context *c)
 {
     memset(c, 0, sizeof(*c));
-    c->resolver_ip = DEFAULT_RESOLVER_IP;
-    c->local_ip = "127.0.0.1:54";
+    c->resolver_ip = resolver_address;
+    c->local_ip = listen_address ? listen_address : "0.0.0.0:53";
     c->udp_listener_handle = -1;
     c->udp_resolver_handle = -1;
     c->connections_max = 250;
@@ -67,7 +85,7 @@ context_init(struct context *c)
     if (sockaddr_from_ip_and_port(&c->resolver_sockaddr,
                                   &c->resolver_sockaddr_len,
                                   c->resolver_ip,
-                                  "443", "Unsupported resolver address") != 0) {
+                                  "53", "Unsupported resolver address") != 0) {
         return -1;
     }
 
@@ -85,6 +103,14 @@ int
 main(int argc, const char **argv)
 {
     struct context c;
+
+    argparse_init(&argparse, options, config_usage, 0);
+    argc = argparse_parse(&argparse, argc, argv);
+    if (!resolver_address) {
+        printf("You must specify --resolver-address.\n\n");
+        argparse_usage(&argparse);
+        exit(0);
+    }
 
     if (context_init(&c)) {
         logger(LOG_ERR, "Unable to start the dnscrypt wrapper.");

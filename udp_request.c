@@ -285,7 +285,6 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     struct dns_header *header = (struct dns_header *)dns_query;
     udp_request->id = ntohs(header->id);
     udp_request->crc = questions_crc(header, dns_query_len, c->namebuff);
-    printf("crc: %ud\n", udp_request->crc);
     /* *INDENT-OFF* */
     sendto_with_retry(&(SendtoWithRetryCtx) {
           .udp_request = udp_request,
@@ -361,13 +360,18 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
         return;
     }
 
+    /* *INDENT-OFF* */
     sendto_with_retry(&(SendtoWithRetryCtx) {
-                      .udp_request = udp_request,.handle =
-                      udp_request->client_proxy_handle,.buffer =
-                      dns_reply,.length = dns_reply_len,.flags = 0,.dest_addr =
-                      (struct sockaddr *)&udp_request->
-                      client_sockaddr,.dest_len =
-                      udp_request->client_sockaddr_len,.cb = udp_request_kill});
+            .udp_request = udp_request,
+            .handle = udp_request->client_proxy_handle,
+            .buffer = dns_reply,
+            .length = dns_reply_len,
+            .flags = 0,
+            .dest_addr = (struct sockaddr *)&udp_request->client_sockaddr,
+            .dest_len = udp_request->client_sockaddr_len,
+            .cb = udp_request_kill}
+        );
+    /* *INDENT-ON* */
 }
 
 int

@@ -65,8 +65,6 @@
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #define crypto_box_HALF_NONCEBYTES (crypto_box_NONCEBYTES / 2U)
 
-#define DEFAULT_RESOLVER_IP "208.67.220.220:443"
-
 #include "edns.h"
 #include "udp_request.h"
 #include "rfc1035.h"
