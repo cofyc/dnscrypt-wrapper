@@ -6,6 +6,7 @@
 #include <event2/event.h>
 #include <event2/util.h>
 #include <crypto_box.h>
+#include <crypto_sign_ed25519.h>
 #include <randombytes.h>
 
 #define DNS_QUERY_TIMEOUT 10
@@ -66,7 +67,7 @@
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #define crypto_box_HALF_NONCEBYTES (crypto_box_NONCEBYTES / 2U)
 
-#define DEFAULT_PROVIDER_NAME "2.cert.dnscrypt.org."
+#define DEFAULT_PROVIDER_NAME "2.cert.dnscrypt.org"
 
 #include "edns.h"
 #include "udp_request.h"
@@ -106,6 +107,11 @@ struct context {
      gid_t user_group;
      char *user_dir;
      char *logfile;
+     char *provider_name;
+     char *provider_publickey_file;
+     char *provider_secretkey_file;
+     uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
+     uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
 };
 
 size_t dnscrypt_query_header_size(void);
@@ -114,5 +120,7 @@ int dnscrypt_cmp_client_nonce(const uint8_t
                            const uint8_t * const buf, const size_t len);
 void dnscrypt_memzero(void * const pnt, const size_t size);
 uint64_t dnscrypt_hrtime(void);
+void dnscrypt_key_to_fingerprint(char fingerprint[80U], const uint8_t * const key);
+int dnscrypt_fingerprint_to_key(const char * const fingerprint, uint8_t key[crypto_box_PUBLICKEYBYTES]);
 
 #endif

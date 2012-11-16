@@ -25,7 +25,7 @@
 #define ADD_RDLEN(header, pp, plen, len) \
   (!CHECK_LEN(header, pp, plen, len) ? 0 : (((pp) += (len)), 1))
 
-static int
+int
 extract_name(struct dns_header *header, size_t plen, unsigned char **pp, char
         *name, int isExtract, int extrabytes)
 {

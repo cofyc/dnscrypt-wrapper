@@ -54,47 +54,6 @@ sockaddr_from_ip_and_port(struct sockaddr_storage *const sockaddr,
     return 0;
 }
 
-static int
-context_init(struct context *c)
-{
-    if (!c->listen_address)
-        c->listen_address = "0.0.0.0:53";
-    c->udp_listener_handle = -1;
-    c->udp_resolver_handle = -1;
-    c->connections_max = 250;
-    if (c->user) {
-        struct passwd *pw = getpwnam(c->user);
-        if (pw == NULL) {
-            logger(LOG_ERR, "Unknown user: [%s]", c->user);
-            exit(1);
-        }
-        c->user_id = pw->pw_uid;
-        c->user_group = pw->pw_gid;
-        c->user_dir = strdup(pw->pw_dir);
-    }
-
-    if ((c->event_loop = event_base_new()) == NULL) {
-        logger(LOG_ERR, "Unable to initialize the event loop");
-        return -1;
-    }
-
-    if (sockaddr_from_ip_and_port(&c->resolver_sockaddr,
-                                  &c->resolver_sockaddr_len,
-                                  c->resolver_address,
-                                  "53", "Unsupported resolver address") != 0) {
-        return -1;
-    }
-
-    if (sockaddr_from_ip_and_port(&c->local_sockaddr,
-                                  &c->local_sockaddr_len,
-                                  c->listen_address,
-                                  "53", "Unsupported local address") != 0) {
-        return -1;
-    }
-
-    return 0;
-}
-
 static void
 init_locale(void)
 {
@@ -181,12 +140,30 @@ do_daemonize(void)
         close(fd);
 }
 
+static int
+write_to_file(const char *path, char *buf, size_t count)
+{
+    int fd;
+    fd = open(path, O_WRONLY | O_CREAT);
+    if (fd < 0) {
+        printf("Cannnot open %s to write.\n", path);
+        return -1;
+    }
+    chmod(path, 0444);
+    if (safe_write(fd, buf, count, 3) != count) {
+        printf("Cannnot write to %s.\n", path);
+        return -1;
+    }
+    return 0;
+}
+
 int
 main(int argc, const char **argv)
 {
     struct context c;
     memset(&c, 0, sizeof(struct context));
 
+    int gen_provider_keypair = 0;
     struct argparse argparse;
     struct argparse_option options[] = {
         OPT_HELP(),
@@ -196,13 +173,44 @@ main(int argc, const char **argv)
         OPT_BOOLEAN('d', "daemonize", &c.daemonize, "run as daemon (default: off)"),
         OPT_BOOLEAN('t', "tcp-only", &c.tcp_only, "use tcp only (default: off)"),
         OPT_STRING('l', "logfile", &c.logfile, "log file path (default: stdout)"),
+        OPT_STRING(0, "provider-name", &c.provider_name, "provider name (default: 2.cert.dnscrypt.org)"),
+        OPT_STRING(0, "provider-publickey-file", &c.provider_publickey_file, "provider public key file"),
+        OPT_STRING(0, "provider-secretkey-file", &c.provider_secretkey_file, "provider secret key file"),
+        OPT_BOOLEAN(0, "gen-provider-keypair", &gen_provider_keypair, "generate provider key pair"),
         OPT_END(),
     };
 
     argparse_init(&argparse, options, config_usage, 0);
     argc = argparse_parse(&argparse, argc, argv);
+    
+    if (gen_provider_keypair) {
+        uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
+        uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
+        printf("Generate provider key pair...");
+        if (crypto_sign_ed25519_keypair(provider_publickey, provider_secretkey) == 0) {
+            printf(" ok.\n");
+            char fingerprint[80];
+            dnscrypt_key_to_fingerprint(fingerprint, provider_publickey);
+            printf("Public key fingerprint: %s\n", fingerprint);
+            if (write_to_file("public.key", (char *)provider_publickey, crypto_sign_ed25519_PUBLICKEYBYTES) == 0 &&
+                write_to_file("secret.key", (char *)provider_secretkey, crypto_sign_ed25519_SECRETKEYBYTES) == 0) {
+                printf("Keys are stored in public.key & secret.key.\n");
+                exit(0);
+            }
+            exit(1);
+        } else {
+            printf(" failed.\n");
+        }
+        exit(0);
+    }
+
+    // setup logger
+    if (c.logfile) {
+        logger_logfile = c.logfile;
+    }
+
     if (!c.resolver_address) {
-        printf("You must specify --resolver-address.\n\n");
+        logger(LOG_ERR, "You must specify --resolver-address.\n\n");
         argparse_usage(&argparse);
         exit(0);
     }
@@ -234,16 +242,71 @@ main(int argc, const char **argv)
     /*printf("%s\n", data + crypto_box_ZEROBYTES);*/
     /*exit(0);*/
 
-    if (c.logfile) {
-        logger_logfile = c.logfile;
+    if (!c.listen_address)
+        c.listen_address = "0.0.0.0:53";
+    c.udp_listener_handle = -1;
+    c.udp_resolver_handle = -1;
+    c.connections_max = 250;
+    if (c.user) {
+        struct passwd *pw = getpwnam(c.user);
+        if (pw == NULL) {
+            logger(LOG_ERR, "Unknown user: [%s]", c.user);
+            exit(1);
+        }
+        c.user_id = pw->pw_uid;
+        c.user_group = pw->pw_gid;
+        c.user_dir = strdup(pw->pw_dir);
     }
 
+    // provider publick & secret key
+    if (!c.provider_publickey_file || !c.provider_secretkey_file) {
+        logger(LOG_ERR, "You must provide public key and secret key files.");
+        exit(1);
+    }
+    int fd;
+    fd = open(c.provider_publickey_file, O_RDONLY);
+    if (fd < 0) {
+        logger(LOG_ERR, "Cannot open %s.\n", c.provider_publickey_file);
+        exit(1);
+    }
+    if (safe_read(fd, c.provider_publickey, crypto_sign_ed25519_PUBLICKEYBYTES) != crypto_sign_ed25519_PUBLICKEYBYTES) {
+        logger(LOG_ERR, "Invalid public key file: %s\n", c.provider_publickey_file);
+    }
+    close(fd);
+    fd = open(c.provider_secretkey_file, O_RDONLY);
+    if (fd < 0) {
+        logger(LOG_ERR, "Cannot open %s.\n", c.provider_secretkey_file);
+        exit(1);
+    }
+    if (safe_read(fd, c.provider_secretkey, crypto_sign_ed25519_SECRETKEYBYTES) != crypto_sign_ed25519_SECRETKEYBYTES) {
+        logger(LOG_ERR, "Invalid secret key file: %s\n", c.provider_secretkey_file);
+    }
+    close(fd);
+    char fingerprint[80];
+    dnscrypt_key_to_fingerprint(fingerprint, c.provider_publickey);
+    logger(LOG_INFO, "Public key fingerprint: %s", fingerprint);
+
+    // 
     if (c.daemonize) {
         do_daemonize();
     }
 
-    if (context_init(&c)) {
-        logger(LOG_ERR, "Unable to start the dnscrypt wrapper.");
+    if (sockaddr_from_ip_and_port(&c.resolver_sockaddr,
+                                  &c.resolver_sockaddr_len,
+                                  c.resolver_address,
+                                  "53", "Unsupported resolver address") != 0) {
+        exit(1);
+    }
+
+    if (sockaddr_from_ip_and_port(&c.local_sockaddr,
+                                  &c.local_sockaddr_len,
+                                  c.listen_address,
+                                  "53", "Unsupported local address") != 0) {
+        exit(1);
+    }
+
+    if ((c.event_loop = event_base_new()) == NULL) {
+        logger(LOG_ERR, "Unable to initialize the event loop.");
         exit(1);
     }
 

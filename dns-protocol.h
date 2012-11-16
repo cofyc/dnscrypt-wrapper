@@ -85,18 +85,18 @@ struct dns_header {
   
 #define GETSHORT(s, cp) { \
 	unsigned char *t_cp = (unsigned char *)(cp); \
-	(s) = ((u16)t_cp[0] << 8) \
-	    | ((u16)t_cp[1]) \
+	(s) = ((uint16_t)t_cp[0] << 8) \
+	    | ((uint16_t)t_cp[1]) \
 	    ; \
 	(cp) += 2; \
 }
 
 #define GETLONG(l, cp) { \
 	unsigned char *t_cp = (unsigned char *)(cp); \
-	(l) = ((u32)t_cp[0] << 24) \
-	    | ((u32)t_cp[1] << 16) \
-	    | ((u32)t_cp[2] << 8) \
-	    | ((u32)t_cp[3]) \
+	(l) = ((uint32_t)t_cp[0] << 24) \
+	    | ((uint32_t)t_cp[1] << 16) \
+	    | ((uint32_t)t_cp[2] << 8) \
+	    | ((uint32_t)t_cp[3]) \
 	    ; \
 	(cp) += 4; \
 }
@@ -110,7 +110,7 @@ struct dns_header {
 }
 
 #define PUTLONG(l, cp) { \
-	u32 t_l = (u32)(l); \
+	uint32_t t_l = (uint32_t)(l); \
 	unsigned char *t_cp = (unsigned char *)(cp); \
 	*t_cp++ = t_l >> 24; \
 	*t_cp++ = t_l >> 16; \

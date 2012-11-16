@@ -1,12 +1,5 @@
 #include "dnscrypt.h"
 
-struct dnscrypt_query_header {
-    uint8_t magic_query[DNSCRYPT_MAGIC_QUERY_LEN];
-    uint8_t publickey[crypto_box_PUBLICKEYBYTES];
-    uint8_t nonce[crypto_box_HALF_NONCEBYTES];
-    uint8_t mac[crypto_box_MACBYTES];
-};
-
 //  8 bytes: magic_query
 // 32 bytes: the client's DNSCurve public key (crypto_box_PUBLICKEYBYTES)
 // 12 bytes: a client-selected nonce (crypto_box_HALF_NONCEBYTES)

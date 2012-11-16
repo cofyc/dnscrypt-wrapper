@@ -32,6 +32,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <uuid/uuid.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[1]))
