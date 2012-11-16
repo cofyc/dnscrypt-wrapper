@@ -8,6 +8,9 @@ DESCRIPTION
 
 This is dnscrypt wrapper, which enables dnscrypt support for any dns server.
 
+This software is modified from
+[dnscrypt-proxy](https://github.com/opendns/dnscrypt-proxy).
+
 INSTALLATION
 ============
 

@@ -76,6 +76,7 @@
 #include "dnscrypt_server.h"
 #include "salsa20_random.h"
 #include "safe_rw.h"
+#include "cert.h"
 
 struct context {
      struct sockaddr_storage local_sockaddr;
