@@ -20,6 +20,8 @@ LIB_OBJS += logger.o
 LIB_OBJS += main.o
 LIB_OBJS += rfc1035.o
 LIB_OBJS += argparse/argparse.o
+LIB_OBJS += salsa20_random.o
+LIB_OBJS += safe_rw.o
 
 LDADD += libnacl/build/localhost/lib/local/libnacl.a
 LDADD += libevent/.libs/libevent.a

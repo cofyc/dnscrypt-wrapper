@@ -16,6 +16,7 @@ INSTALLATION
     
 Usage
 =====
+
 	$ dnscrypt-wrapper --daemonize --listen-address=<local ip:port> --resolver-address=<dns server ip:port>
 
 See also

@@ -35,5 +35,6 @@
 #include <fcntl.h>
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[1]))
+#define COMPILER_ASSERT(X) (void) sizeof(char[(X) ? 1 : -1])
 
 #endif

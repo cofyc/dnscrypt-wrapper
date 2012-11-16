@@ -200,14 +200,12 @@ static void
 client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
                    void *const context)
 {
-    logger(LOG_INFO, "client to proxy cb");
+    logger(LOG_DEBUG, "client to proxy cb");
     uint8_t dns_query[DNS_MAX_PACKET_SIZE_UDP];
     struct context *c = context;
     UDPRequest *udp_request;
     ssize_t nread;
     size_t dns_query_len = 0;
-    size_t max_query_size;
-    size_t request_edns_payload_size;
 
     (void)ev_flags;
     assert(client_proxy_handle == c->udp_listener_handle);
@@ -245,6 +243,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
             // tcp
         }
     }
+
     c->connections++;
     assert(c->connections <= c->connections_max);
     TAILQ_INSERT_TAIL(&c->udp_request_queue, udp_request, queue);
@@ -253,19 +252,6 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     dns_query_len = (size_t) nread;
     assert(dns_query_len <= sizeof(dns_query));
 
-    edns_add_section(c, dns_query, &dns_query_len, sizeof(dns_query),
-                     &request_edns_payload_size);
-
-    if (request_edns_payload_size < DNS_MAX_PACKET_SIZE_UDP_SEND) {
-        max_query_size = DNS_MAX_PACKET_SIZE_UDP_SEND;
-    } else {
-        max_query_size = request_edns_payload_size;
-    }
-    if (max_query_size > sizeof(dns_query)) {
-        max_query_size = sizeof(dns_query);
-    }
-
-    assert(max_query_size <= sizeof(dns_query));
     if (udp_request->context->tcp_only != 0) {
         proxy_client_send_truncated(udp_request, dns_query, dns_query_len);
         return;
@@ -273,18 +259,18 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - dnscrypt_query_header_size() >
            dns_query_len);
 
-    size_t max_len =
-        dns_query_len + DNSCRYPT_MAX_PADDING + dnscrypt_query_header_size();
-    if (max_len > max_query_size) {
-        max_len = max_query_size;
-    }
-    if (dns_query_len + dnscrypt_query_header_size() > max_len) {
-        proxy_client_send_truncated(udp_request, dns_query, dns_query_len);
+    /*uint8_t *p = dns_query + dnscrypt_query_header_size();*/
+    /*dns_query_len -= dnscrypt_query_header_size();*/
+
+    if (dnscrypt_server_uncurve(&c->dnscrypt_server, dns_query, &dns_query_len) != 0) {
+        logger(LOG_WARNING, "Received a suspicious query from the client");
+        udp_request_kill(udp_request);
         return;
     }
     struct dns_header *header = (struct dns_header *)dns_query;
     udp_request->id = ntohs(header->id);
     udp_request->crc = questions_crc(header, dns_query_len, c->namebuff);
+
     /* *INDENT-OFF* */
     sendto_with_retry(&(SendtoWithRetryCtx) {
           .udp_request = udp_request,
@@ -321,7 +307,7 @@ static void
 resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
                      void *const context)
 {
-    logger(LOG_INFO, "resolver to proxy cb");
+    logger(LOG_DEBUG, "resolver to proxy cb");
     uint8_t dns_reply[DNS_MAX_PACKET_SIZE_UDP];
     struct context *c = context;
     UDPRequest *udp_request = NULL;

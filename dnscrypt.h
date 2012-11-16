@@ -6,6 +6,7 @@
 #include <event2/event.h>
 #include <event2/util.h>
 #include <crypto_box.h>
+#include <randombytes.h>
 
 #define DNS_QUERY_TIMEOUT 10
 
@@ -65,10 +66,15 @@
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #define crypto_box_HALF_NONCEBYTES (crypto_box_NONCEBYTES / 2U)
 
+#define DEFAULT_PROVIDER_NAME "2.cert.dnscrypt.org."
+
 #include "edns.h"
 #include "udp_request.h"
 #include "rfc1035.h"
 #include "logger.h"
+#include "dnscrypt_server.h"
+#include "salsa20_random.h"
+#include "safe_rw.h"
 
 struct context {
      struct sockaddr_storage local_sockaddr;
@@ -87,6 +93,7 @@ struct context {
      unsigned int connections;
      unsigned int connections_max;
      size_t edns_payload_size;
+     DNSCryptServer dnscrypt_server;
 
      /* Domain name shared buffer. */
      char namebuff[MAXDNAME];
@@ -105,5 +112,7 @@ size_t dnscrypt_query_header_size(void);
 int dnscrypt_cmp_client_nonce(const uint8_t
                            client_nonce[crypto_box_HALF_NONCEBYTES],
                            const uint8_t * const buf, const size_t len);
+void dnscrypt_memzero(void * const pnt, const size_t size);
+uint64_t dnscrypt_hrtime(void);
 
 #endif
