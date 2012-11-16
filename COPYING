@@ -1,5 +1,5 @@
 
-dnscrypt-wrapper is covered by the following license :
+dnscrypt-wrapper is modified from dnscrypt-proxy, and covered by the following licenses:
 
 /*
  * Copyright (c) 2012 Yecheng Fu <cofyc.jackson at gmail dot com>
@@ -34,9 +34,6 @@ dnscrypt-wrapper is covered by the following license :
  */
 
 ====
-
-This license applies to all parts of dnscrypt-wrapper that are not externally
-maintained libraries.
 
 The externally maintained libraries used by dnscrypt-wrapper are:
 
