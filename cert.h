@@ -3,6 +3,9 @@
 
 #include <crypto_box.h>
 #define CERT_MAGIC_CERT "DNSC"
+#define CERT_MAJOR_VERSION 1
+#define CERT_MINOR_VERSION 0
+#define CERT_MAGIC_HEADER "7PYqwfzt"
 
 typedef struct Bincert_ {
     uint8_t magic_cert[4];

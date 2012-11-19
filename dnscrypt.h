@@ -113,6 +113,10 @@ struct context {
      char *provider_secretkey_file;
      uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
      uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
+     char *crypt_publickey_file;
+     char *crypt_secretkey_file;
+     uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
+     uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
 };
 
 size_t dnscrypt_query_header_size(void);

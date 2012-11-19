@@ -157,6 +157,24 @@ write_to_file(const char *path, char *buf, size_t count)
     return 0;
 }
 
+static int
+read_from_file(const char *path, char *buf, size_t count)
+{
+    int fd;
+    fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        printf("Cannot open %s.\n", path);
+        return -1;
+    }
+    if (safe_read(fd, buf, count) != count) {
+        printf("Invalid file: %s\n", path);
+        close(fd);
+        return -1;
+    }
+    close(fd);
+    return 0;
+}
+
 int
 main(int argc, const char **argv)
 {
@@ -164,6 +182,7 @@ main(int argc, const char **argv)
     memset(&c, 0, sizeof(struct context));
 
     int gen_provider_keypair = 0;
+    int gen_crypt_keypair = 0;
     struct argparse argparse;
     struct argparse_option options[] = {
         OPT_HELP(),
@@ -177,6 +196,9 @@ main(int argc, const char **argv)
         OPT_STRING(0, "provider-publickey-file", &c.provider_publickey_file, "provider public key file"),
         OPT_STRING(0, "provider-secretkey-file", &c.provider_secretkey_file, "provider secret key file"),
         OPT_BOOLEAN(0, "gen-provider-keypair", &gen_provider_keypair, "generate provider key pair"),
+        OPT_STRING(0, "crypt-publickey-file", &c.crypt_publickey_file, "crypt public key file"),
+        OPT_STRING(0, "crypt-secretkey-file", &c.crypt_secretkey_file, "crypt secret key file"),
+        OPT_BOOLEAN(0, "gen-crypt-keypair", &gen_crypt_keypair, "generate crypt key pair"),
         OPT_END(),
     };
 
@@ -200,8 +222,26 @@ main(int argc, const char **argv)
             exit(1);
         } else {
             printf(" failed.\n");
+            exit(1);
         }
-        exit(0);
+    }
+
+    if (gen_crypt_keypair) {
+        uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
+        uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
+        printf("Generate crypt key pair...");
+        if (crypto_box_keypair(crypt_publickey, crypt_secretkey) == 0) {
+            printf(" ok.\n");
+            if (write_to_file("crypt_public.key", (char *)crypt_publickey, crypto_box_PUBLICKEYBYTES) == 0
+                && write_to_file("crypt_secret.key", (char *)crypt_secretkey, crypto_box_SECRETKEYBYTES) == 0) {
+                printf("Keys are stored in crypt_public.key & crypt_secret.key.\n");
+                exit(0);
+            }
+            exit(1);
+        } else {
+            printf(" failed.\n");
+            exit(1);
+        }
     }
 
     // setup logger
@@ -258,35 +298,29 @@ main(int argc, const char **argv)
         c.user_dir = strdup(pw->pw_dir);
     }
 
-    // provider publick & secret key
+    // provider public & secret key
     if (!c.provider_publickey_file || !c.provider_secretkey_file) {
-        logger(LOG_ERR, "You must provide public key and secret key files.");
+        logger(LOG_ERR, "You must provide --provider-publickey-file and --provider-secretkey-file.");
         exit(1);
     }
-    int fd;
-    fd = open(c.provider_publickey_file, O_RDONLY);
-    if (fd < 0) {
-        logger(LOG_ERR, "Cannot open %s.\n", c.provider_publickey_file);
+    if (read_from_file(c.provider_publickey_file, (char *)c.provider_publickey, crypto_sign_ed25519_PUBLICKEYBYTES) == 0 && read_from_file(c.provider_secretkey_file, (char *)c.provider_secretkey, crypto_sign_ed25519_SECRETKEYBYTES) == 0) {
+    } else {
         exit(1);
     }
-    if (safe_read(fd, c.provider_publickey, crypto_sign_ed25519_PUBLICKEYBYTES) != crypto_sign_ed25519_PUBLICKEYBYTES) {
-        logger(LOG_ERR, "Invalid public key file: %s\n", c.provider_publickey_file);
-    }
-    close(fd);
-    fd = open(c.provider_secretkey_file, O_RDONLY);
-    if (fd < 0) {
-        logger(LOG_ERR, "Cannot open %s.\n", c.provider_secretkey_file);
-        exit(1);
-    }
-    if (safe_read(fd, c.provider_secretkey, crypto_sign_ed25519_SECRETKEYBYTES) != crypto_sign_ed25519_SECRETKEYBYTES) {
-        logger(LOG_ERR, "Invalid secret key file: %s\n", c.provider_secretkey_file);
-    }
-    close(fd);
     char fingerprint[80];
     dnscrypt_key_to_fingerprint(fingerprint, c.provider_publickey);
     logger(LOG_INFO, "Public key fingerprint: %s", fingerprint);
 
-    // 
+    // crypt public & secret key
+    if (!c.crypt_publickey_file || !c.crypt_secretkey_file) {
+        logger(LOG_ERR, "You must provide --crypt-secretkey-file and --crypt-secretkey-file.");
+        exit(1);
+    }
+    if (read_from_file(c.crypt_publickey_file, (char *)c.crypt_publickey, crypto_box_PUBLICKEYBYTES) != 0 ||
+        read_from_file(c.crypt_secretkey_file, (char *)c.crypt_secretkey, crypto_box_SECRETKEYBYTES) != 0) {
+        exit(1);
+    }
+
     if (c.daemonize) {
         do_daemonize();
     }
