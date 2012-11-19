@@ -39,6 +39,8 @@ libnacl/build/localhost/lib/local/libnacl.a:
 libevent/.libs/libevent.a:
 	@make -C libevent
 
+$(LIB_OBJS): $(LIB_H)
+
 all:: dnscrypt-wrapper
 
 dnscrypt-wrapper: $(LIB_OBJS) $(LDADD)

@@ -128,4 +128,25 @@ uint64_t dnscrypt_hrtime(void);
 void dnscrypt_key_to_fingerprint(char fingerprint[80U], const uint8_t * const key);
 int dnscrypt_fingerprint_to_key(const char * const fingerprint, uint8_t key[crypto_box_PUBLICKEYBYTES]);
 
+static inline void
+print_binary_string(uint8_t *s, size_t count)
+{
+    for (size_t i = 1; i <= count; i++) {
+        uint8_t x = *((uint8_t *)s + i);
+        if (x >= (uint8_t)'0' && x <= (uint8_t)'9') {
+            printf("%d", x);
+        } else if (x >= (uint8_t)'a' && x <= (uint8_t)'z') {
+            printf("%c", x);
+        } else if (x >= (uint8_t)'A' && x <= (uint8_t)'Z') {
+            printf("%c", x);
+        } else {
+            printf("\\%03d", x);
+        }
+        if (i % 16 == 0) {
+            printf("\n");
+        }
+    }
+    printf("\n");
+}
+
 #endif

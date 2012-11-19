@@ -217,3 +217,177 @@ questions_crc(struct dns_header *header, size_t plen, char *name)
 
   return crc;
 }
+
+static unsigned char *skip_name(unsigned char *ansp, struct dns_header *header, size_t plen, int extrabytes)
+{
+  while(1)
+    {
+      unsigned int label_type;
+
+      if (!CHECK_LEN(header, ansp, plen, 1))
+    return NULL;
+
+      label_type = (*ansp) & 0xc0;
+
+      if (label_type == 0xc0)
+    {
+      /* pointer for compression. */
+      ansp += 2;
+      break;
+    }
+      else if (label_type == 0x80)
+    return NULL; /* reserved */
+      else if (label_type == 0x40)
+    {
+      /* Extended label type */
+      unsigned int count;
+
+      if (!CHECK_LEN(header, ansp, plen, 2))
+        return NULL;
+
+    if (((*ansp++) & 0x3f) != 1)
+        return NULL; /* we only understand bitstrings */
+
+      count = *(ansp++); /* Bits in bitstring */
+
+      if (count == 0) /* count == 0 means 256 bits */
+        ansp += 32;
+      else
+        ansp += ((count-1)>>3)+1;
+    }
+      else
+    { /* label type == 0 Bottom six bits is length */
+      unsigned int len = (*ansp++) & 0x3f;
+
+      if (!ADD_RDLEN(header, ansp, plen, len))
+        return NULL;
+
+      if (len == 0)
+        break; /* zero length label marks the end. */
+    }
+    }
+
+  if (!CHECK_LEN(header, ansp, plen, extrabytes))
+    return NULL;
+
+  return ansp;
+}
+
+
+unsigned char *
+skip_questions(struct dns_header *header, size_t plen)
+{
+  int q;
+  unsigned char *ansp = (unsigned char *)(header+1);
+
+  for (q = ntohs(header->qdcount); q != 0; q--)
+    {
+      if (!(ansp = skip_name(ansp, header, plen, 4)))
+    return NULL;
+      ansp += 4; /* class and type */
+    }
+
+  return ansp;
+}
+
+unsigned char *
+do_rfc1035_name(unsigned char *p, char *sval)
+{   
+  int j;
+
+  while (sval && *sval)
+    {
+      unsigned char *cp = p++;
+      for (j = 0; *sval && (*sval != '.'); sval++, j++)
+    *p++ = *sval;
+      *cp  = j;
+      if (*sval)
+    sval++;
+    } 
+  return p;
+} 
+
+int
+add_resource_record(struct dns_header *header, unsigned int nameoffset, unsigned char **pp, 
+			       unsigned long ttl, unsigned int *offset, unsigned short type, unsigned short class, char *format, ...)
+{
+  va_list ap;
+  unsigned char *sav, *p = *pp;
+  int j;
+  unsigned short usval;
+  long lval;
+  char *sval;
+
+
+  PUTSHORT(nameoffset | 0xc000, p);
+  PUTSHORT(type, p);
+  PUTSHORT(class, p);
+  PUTLONG(ttl, p);      /* TTL */
+
+  sav = p;              /* Save pointer to RDLength field */
+  PUTSHORT(0, p);       /* Placeholder RDLength */
+
+  va_start(ap, format);   /* make ap point to 1st unamed argument */
+  
+  for (; *format; format++)
+    switch (*format)
+      {
+#ifdef HAVE_IPV6
+      case '6':
+	sval = va_arg(ap, char *); 
+	memcpy(p, sval, IN6ADDRSZ);
+	p += IN6ADDRSZ;
+	break;
+#endif
+	
+      case '4':
+	sval = va_arg(ap, char *); 
+	memcpy(p, sval, INADDRSZ);
+	p += INADDRSZ;
+	break;
+	
+      case 's':
+	usval = va_arg(ap, int);
+	PUTSHORT(usval, p);
+	break;
+	
+      case 'l':
+	lval = va_arg(ap, long);
+	PUTLONG(lval, p);
+	break;
+	
+      case 'd':
+	/* get domain-name answer arg and store it in RDATA field */
+	if (offset)
+	  *offset = p - (unsigned char *)header;
+	p = do_rfc1035_name(p, va_arg(ap, char *));
+	*p++ = 0;
+	break;
+	
+      case 't':
+	usval = va_arg(ap, int);
+	sval = va_arg(ap, char *);
+	if (usval != 0)
+	  memcpy(p, sval, usval);
+	p += usval;
+	break;
+
+      case 'z':
+	sval = va_arg(ap, char *);
+	usval = sval ? strlen(sval) : 0;
+	if (usval > 255)
+	  usval = 255;
+	*p++ = (unsigned char)usval;
+	memcpy(p, sval, usval);
+	p += usval;
+	break;
+      }
+
+  va_end(ap);	/* clean up variable argument pointer */
+  
+  j = p - sav - 2;
+  PUTSHORT(j, sav);     /* Now, store real RDLength */
+  
+  *pp = p;
+  return 1;
+}

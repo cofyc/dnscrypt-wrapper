@@ -192,7 +192,7 @@ main(int argc, const char **argv)
         OPT_BOOLEAN('d', "daemonize", &c.daemonize, "run as daemon (default: off)"),
         OPT_BOOLEAN('t', "tcp-only", &c.tcp_only, "use tcp only (default: off)"),
         OPT_STRING('l', "logfile", &c.logfile, "log file path (default: stdout)"),
-        OPT_STRING(0, "provider-name", &c.provider_name, "provider name (default: 2.cert.dnscrypt.org)"),
+        OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
         OPT_STRING(0, "provider-publickey-file", &c.provider_publickey_file, "provider public key file"),
         OPT_STRING(0, "provider-secretkey-file", &c.provider_secretkey_file, "provider secret key file"),
         OPT_BOOLEAN(0, "gen-provider-keypair", &gen_provider_keypair, "generate provider key pair"),
@@ -296,6 +296,11 @@ main(int argc, const char **argv)
         c.user_id = pw->pw_uid;
         c.user_group = pw->pw_gid;
         c.user_dir = strdup(pw->pw_dir);
+    }
+
+    if (!c.provider_name) {
+        logger(LOG_ERR, "You must specify --provider-name.");
+        exit(1);
     }
 
     // provider public & secret key

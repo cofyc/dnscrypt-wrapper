@@ -102,7 +102,7 @@ struct dns_header {
 }
 
 #define PUTSHORT(s, cp) { \
-	u16 t_s = (u16)(s); \
+	uint16_t t_s = (uint16_t)(s); \
 	unsigned char *t_cp = (unsigned char *)(cp); \
 	*t_cp++ = t_s >> 8; \
 	*t_cp   = t_s; \

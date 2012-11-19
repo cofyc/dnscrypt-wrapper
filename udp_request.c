@@ -259,9 +259,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - dnscrypt_query_header_size() >
            dns_query_len);
 
-    /*uint8_t *p = dns_query + dnscrypt_query_header_size();*/
-    /*dns_query_len -= dnscrypt_query_header_size();*/
-
+    // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header = (struct dnscrypt_query_header *)dns_query;
     if (memcmp(dnscrypt_header->magic_query, "q6fnvWj9", DNSCRYPT_MAGIC_QUERY_LEN) == 0) {
         if (dnscrypt_server_uncurve(&c->dnscrypt_server, dns_query, &dns_query_len) != 0) {
@@ -275,6 +273,72 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     if (OPCODE(header) != QUERY) {
         udp_request_kill(udp_request);
     }
+
+    // check txt query
+    unsigned char *p;
+    unsigned char *ansp;
+    int q;
+    int qtype, qclass;
+    unsigned int nameoffset;
+    p = (unsigned char *)(header + 1);
+    int anscount = 0;
+    /* determine end of questions section (we put answers there) */
+    if (!(ansp = skip_questions(header, dns_query_len))) {
+        udp_request_kill(udp_request);
+        return;
+    }
+    for (q = ntohs(header->qdcount); q != 0; q--) {
+        /* save pointer to name for copying into answers */
+        nameoffset = p - (unsigned char *)header;
+
+        if (!extract_name(header, dns_query_len, &p, c->namebuff, 1, 4)) {
+            udp_request_kill(udp_request);
+            return;
+        }
+        GETSHORT(qtype, p);
+        GETSHORT(qclass, p);
+        if (qtype == T_TXT && strcasecmp(c->provider_name, c->namebuff) == 0) {
+            // reply with signed certificate
+            size_t size;
+            uint8_t *txt = cert_signed_cert_txt_binarydata(c, &size);
+            if (size == 0) {
+                udp_request_kill(udp_request);
+                return;
+            }
+            if (add_resource_record(header, nameoffset, &ansp, 0, NULL, T_TXT, C_IN, "t", size, txt)) {
+                anscount++;
+            } else {
+                udp_request_kill(udp_request);
+                return;
+            }
+            /* done all questions, set up header and return length of result */
+            /* clear authoritative and truncated flags, set QR flag */
+            header->hb3 = (header->hb3 & ~(HB3_AA | HB3_TC)) | HB3_QR;
+            /* set RA flag */
+            header->hb4 |= HB4_RA;
+
+            SET_RCODE(header, NOERROR);
+            header->ancount = htons(anscount);
+            header->nscount = htons(0);
+            header->arcount = htons(0);
+            dns_query_len = ansp - (unsigned char *)header;
+
+            /* *INDENT-OFF* */
+            sendto_with_retry(&(SendtoWithRetryCtx) {
+                    .udp_request = udp_request,
+                    .handle = udp_request->client_proxy_handle,
+                    .buffer = dns_query,
+                    .length = dns_query_len,
+                    .flags = 0,
+                    .dest_addr = (struct sockaddr *)&udp_request->client_sockaddr,
+                    .dest_len = udp_request->client_sockaddr_len,
+                    .cb = udp_request_kill}
+                );
+            /* *INDENT-ON* */
+            return;
+        }
+    }
+
     udp_request->id = ntohs(header->id);
     udp_request->crc = questions_crc(header, dns_query_len, c->namebuff);
 
