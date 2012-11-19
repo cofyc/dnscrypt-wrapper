@@ -261,7 +261,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
 
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header = (struct dnscrypt_query_header *)dns_query;
-    if (memcmp(dnscrypt_header->magic_query, "q6fnvWj9", DNSCRYPT_MAGIC_QUERY_LEN) == 0) {
+    if (memcmp(dnscrypt_header->magic_query, CERT_MAGIC_HEADER, DNSCRYPT_MAGIC_QUERY_LEN) == 0) {
         if (dnscrypt_server_uncurve(&c->dnscrypt_server, dns_query, &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             udp_request_kill(udp_request);

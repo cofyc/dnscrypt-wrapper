@@ -28,7 +28,6 @@ dnscrypt_server_uncurve(DNSCryptServer * const server,
                 len - DNSCRYPT_QUERY_BOX_OFFSET + crypto_box_BOXZEROBYTES,
                 query_header->nonce,
                 server->nmkey)) {
-        printf("here\n");
         return -1;
     }
 

@@ -17,12 +17,14 @@ cert_signed_cert_txt_binarydata(struct context *c, size_t *size)
     memcpy(signed_cert->magic_query, CERT_MAGIC_HEADER, sizeof(signed_cert->magic_query));
     memcpy(signed_cert->serial, "0001", 4);
     uint32_t ts_begin = (uint32_t)time(NULL) - 365*24*3600;
-    uint32_t ts_end = ts_begin + 365*24*3600;
+    uint32_t ts_end = ts_begin + 365*24*3600*2;
+    ts_begin = ntohl(ts_begin);
+    ts_end = ntohl(ts_end);
     memcpy(signed_cert->ts_begin, &ts_begin, 4);
     memcpy(signed_cert->ts_end, &ts_end, 4);
     memset(signed_cert->end, 0, sizeof(signed_cert->end));
     
-    // sign
+    // auto self-sign
     size_t crypted_signed_data_len = 0;
     size_t signed_data_len = sizeof(struct SignedCert) - offsetof(struct SignedCert, server_publickey) - sizeof(signed_cert->end);
     if (crypto_sign_ed25519(signed_cert->server_publickey, (unsigned long long *)&crypted_signed_data_len, signed_cert->server_publickey, signed_data_len, c->provider_secretkey) != 0) {
