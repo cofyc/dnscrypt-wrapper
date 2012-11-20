@@ -6,7 +6,7 @@ dnscrypt-wrapper - A server-side dnscrypt proxy.
 DESCRIPTION
 ===========
 
-This is dnscrypt wrapper, which enables dnscrypt support for any dns server.
+This is dnscrypt wrapper, a server-side dnscrypt proxy that helps to and dnscrypt support to any dns server.
 
 This software is modified from
 [dnscrypt-proxy](https://github.com/opendns/dnscrypt-proxy).
