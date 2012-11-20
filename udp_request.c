@@ -256,13 +256,13 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
         proxy_client_send_truncated(udp_request, dns_query, dns_query_len);
         return;
     }
-    assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - dnscrypt_query_header_size() >
+    assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - DNSCRYPT_QUERY_HEADER_SIZE >
            dns_query_len);
 
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header = (struct dnscrypt_query_header *)dns_query;
     if (memcmp(dnscrypt_header->magic_query, CERT_MAGIC_HEADER, DNSCRYPT_MAGIC_QUERY_LEN) == 0) {
-        if (dnscrypt_server_uncurve(&c->dnscrypt_server, dns_query, &dns_query_len) != 0) {
+        if (dnscrypt_server_uncurve(c, udp_request->client_nonce, dns_query, &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             udp_request_kill(udp_request);
             return;
@@ -342,6 +342,10 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     udp_request->id = ntohs(header->id);
     udp_request->crc = questions_crc(header, dns_query_len, c->namebuff);
 
+    printf("dns_query_len: %ld\n", dns_query_len);
+    printf("id: %d\n", udp_request->id);
+    print_binary_string(dns_query, dns_query_len);
+
     /* *INDENT-OFF* */
     sendto_with_retry(&(SendtoWithRetryCtx) {
           .udp_request = udp_request,
@@ -414,6 +418,11 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
     udp_request = lookup_request(c, id, crc);
     if (udp_request == NULL) {
         logger(LOG_ERR, "Received a reply that doesn't match any active query");
+        return;
+    }
+
+    if (dnscrypt_server_curve(c, udp_request->client_nonce, dns_reply, &dns_reply_len) != 0) {
+        logger(LOG_ERR, "Curving reply failed.");
         return;
     }
 

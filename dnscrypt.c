@@ -1,13 +1,5 @@
 #include "dnscrypt.h"
 
-size_t
-dnscrypt_query_header_size(void)
-{
-    return DNSCRYPT_MAGIC_QUERY_LEN
-        + crypto_box_PUBLICKEYBYTES
-        + crypto_box_HALF_NONCEBYTES + crypto_box_MACBYTES;
-}
-
 int
 dnscrypt_cmp_client_nonce(const uint8_t
                           client_nonce[crypto_box_HALF_NONCEBYTES],
@@ -35,26 +27,26 @@ void
 dnscrypt_memzero(void * const pnt, const size_t size)
 {
         volatile unsigned char *pnt_ = (volatile unsigned char *) pnt;
-            size_t                     i = (size_t) 0U; 
+            size_t                     i = (size_t) 0U;
 
                 while (i < size) {
-                            pnt_[i++] = 0U; 
-                                }   
+                            pnt_[i++] = 0U;
+                                }
 }
 
 uint64_t
 dnscrypt_hrtime(void)
 {
-    struct timeval tv; 
-    uint64_t       ts = (uint64_t) 0U; 
+    struct timeval tv;
+    uint64_t       ts = (uint64_t) 0U;
     int            ret;
 
     ret = evutil_gettimeofday(&tv, NULL);
-    assert(ret == 0); 
+    assert(ret == 0);
     if (ret == 0) {
         ts = (uint64_t) tv.tv_sec * 1000000U + (uint64_t) tv.tv_usec;
-    }   
-    return ts; 
+    }
+    return ts;
 }
 
 void
@@ -144,4 +136,71 @@ dnscrypt_fingerprint_to_key(const char * const fingerprint,
         p++;
     }
     return -1;
+}
+
+//  8 bytes: magic_query
+// 32 bytes: the client's DNSCurve public key (crypto_box_PUBLICKEYBYTES)
+// 12 bytes: a client-selected nonce (crypto_box_HALF_NONCEBYTES)
+// 16 bytes: Poly1305 MAC (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
+
+#define DNSCRYPT_QUERY_BOX_OFFSET \
+    (DNSCRYPT_MAGIC_QUERY_LEN + crypto_box_PUBLICKEYBYTES + crypto_box_HALF_NONCEBYTES)
+
+int
+dnscrypt_server_uncurve(struct context *c,
+                        uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
+                        uint8_t * const buf, size_t * const lenp)
+{
+    size_t len = *lenp;
+
+    if (len <= DNSCRYPT_QUERY_HEADER_SIZE) {
+        return -1;
+    }
+
+    struct dnscrypt_query_header *query_header = (struct dnscrypt_query_header *)buf;
+    memcpy(c->uncurve_nmkey, query_header->publickey, crypto_box_PUBLICKEYBYTES);
+    if (crypto_box_beforenm(c->uncurve_nmkey, c->uncurve_nmkey, c->crypt_secretkey) != 0) {
+        return -1;
+    }
+
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    memcpy(nonce, query_header->nonce, crypto_box_HALF_NONCEBYTES);
+    memset(nonce + crypto_box_HALF_NONCEBYTES, 0, crypto_box_HALF_NONCEBYTES);
+
+    memset(buf + DNSCRYPT_QUERY_BOX_OFFSET - crypto_box_BOXZEROBYTES, 0, crypto_box_BOXZEROBYTES);
+    if (crypto_box_open_afternm(
+                buf + DNSCRYPT_QUERY_BOX_OFFSET - crypto_box_BOXZEROBYTES,
+                buf + DNSCRYPT_QUERY_BOX_OFFSET - crypto_box_BOXZEROBYTES,
+                len - DNSCRYPT_QUERY_BOX_OFFSET + crypto_box_BOXZEROBYTES,
+                nonce,
+                c->uncurve_nmkey) != 0) {
+        return -1;
+    }
+
+    while (buf[--len] == 0);
+
+    if (buf[len] != 0x80) {
+        return -1;
+    }
+
+    memcpy(client_nonce, nonce, crypto_box_HALF_NONCEBYTES);
+    *lenp = len - DNSCRYPT_QUERY_HEADER_SIZE;
+    memmove(buf, buf + DNSCRYPT_QUERY_HEADER_SIZE, *lenp);
+
+    return 0;
+}
+
+//  8 bytes: magic header (CERT_MAGIC_HEADER)
+// 12 bytes: the client's nonce
+// 12 bytes: server nonce extension
+// 16 bytes: Poly1305 MAC (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
+int
+dnscrypt_server_curve(struct context *c,
+                      uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
+                      uint8_t * const buf, size_t * const lenp)
+{
+
+    print_binary_string(client_nonce, crypto_box_HALF_NONCEBYTES);
+    return 0;
+
 }

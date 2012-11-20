@@ -272,12 +272,12 @@ main(int argc, const char **argv)
     /*printf("gen client nmkey: %d\n", crypto_box_beforenm(client_nmkey, client_nmkey, client_secretkey));*/
     /*// server nmkey*/
     /*memcpy(server_nmkey, client_publickey, crypto_box_PUBLICKEYBYTES);*/
-    /*printf("%d\n", crypto_box_beforenm(server_nmkey, server_nmkey, server_secretkey));*/
-    /*printf("cmp nmkeys: %d\n", memcpy(client_nmkey, server_nmkey, crypto_box_BEFORENMBYTES));*/
+    /*printf("gen server nmkey: %d\n", crypto_box_beforenm(server_nmkey, server_nmkey, server_secretkey));*/
     /*uint8_t data[1024];*/
     /*memset(data, 0, crypto_box_ZEROBYTES);*/
     /*memcpy(data + crypto_box_ZEROBYTES, "abc", 4);*/
     /*printf("afternm: %d\n", crypto_box_afternm((unsigned char*)data, (unsigned char *)data, 4 + crypto_box_ZEROBYTES, nonce, client_nmkey));*/
+    /**//*memset(data, 0, crypto_box_BOXZEROBYTES);*/
     /*printf("open afternm: %d\n", crypto_box_open_afternm((unsigned char*)data, (unsigned char *)data, 4 + crypto_box_ZEROBYTES, nonce, server_nmkey));*/
     /*printf("%s\n", data + crypto_box_ZEROBYTES);*/
     /*exit(0);*/
@@ -312,9 +312,11 @@ main(int argc, const char **argv)
     } else {
         exit(1);
     }
-    char fingerprint[80];
-    dnscrypt_key_to_fingerprint(fingerprint, c.provider_publickey);
-    logger(LOG_INFO, "Public key fingerprint: %s", fingerprint);
+    {
+        char fingerprint[80];
+        dnscrypt_key_to_fingerprint(fingerprint, c.provider_publickey);
+        logger(LOG_INFO, "Public key fingerprint: %s", fingerprint);
+    }
 
     // crypt public & secret key
     if (!c.crypt_publickey_file || !c.crypt_secretkey_file) {
@@ -324,6 +326,11 @@ main(int argc, const char **argv)
     if (read_from_file(c.crypt_publickey_file, (char *)c.crypt_publickey, crypto_box_PUBLICKEYBYTES) != 0 ||
         read_from_file(c.crypt_secretkey_file, (char *)c.crypt_secretkey, crypto_box_SECRETKEYBYTES) != 0) {
         exit(1);
+    }
+    {
+        char fingerprint[80];
+        dnscrypt_key_to_fingerprint(fingerprint, c.crypt_publickey);
+        logger(LOG_INFO, "Crypt public key fingerprint: %s", fingerprint);
     }
 
     if (c.daemonize) {

@@ -73,10 +73,12 @@
 #include "udp_request.h"
 #include "rfc1035.h"
 #include "logger.h"
-#include "dnscrypt_server.h"
 #include "salsa20_random.h"
 #include "safe_rw.h"
 #include "cert.h"
+
+#define DNSCRYPT_QUERY_HEADER_SIZE \
+    (DNSCRYPT_MAGIC_QUERY_LEN + crypto_box_PUBLICKEYBYTES + crypto_box_HALF_NONCEBYTES + crypto_box_MACBYTES)
 
 struct context {
      struct sockaddr_storage local_sockaddr;
@@ -95,7 +97,6 @@ struct context {
      unsigned int connections;
      unsigned int connections_max;
      size_t edns_payload_size;
-     DNSCryptServer dnscrypt_server;
 
      /* Domain name shared buffer. */
      char namebuff[MAXDNAME];
@@ -117,9 +118,9 @@ struct context {
      char *crypt_secretkey_file;
      uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
      uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
+     uint8_t uncurve_nmkey[crypto_box_BEFORENMBYTES];
 };
 
-size_t dnscrypt_query_header_size(void);
 int dnscrypt_cmp_client_nonce(const uint8_t
                            client_nonce[crypto_box_HALF_NONCEBYTES],
                            const uint8_t * const buf, const size_t len);
@@ -132,7 +133,7 @@ static inline void
 print_binary_string(uint8_t *s, size_t count)
 {
     for (size_t i = 1; i <= count; i++) {
-        uint8_t x = *((uint8_t *)s + i);
+        uint8_t x = *((uint8_t *)s + i - 1);
         if (x >= (uint8_t)'0' && x <= (uint8_t)'9') {
             printf("%d", x);
         } else if (x >= (uint8_t)'a' && x <= (uint8_t)'z') {
@@ -149,4 +150,17 @@ print_binary_string(uint8_t *s, size_t count)
     printf("\n");
 }
 
+struct dnscrypt_query_header {
+    uint8_t magic_query[DNSCRYPT_MAGIC_QUERY_LEN];
+    uint8_t publickey[crypto_box_PUBLICKEYBYTES];
+    uint8_t nonce[crypto_box_HALF_NONCEBYTES];
+    uint8_t mac[crypto_box_MACBYTES];
+};
+
+int dnscrypt_server_uncurve(struct context *c,
+                            uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
+                            uint8_t * const buf, size_t * const lenp);
+int dnscrypt_server_curve(struct context *c,
+                          uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
+                          uint8_t * const buf, size_t * const lenp);
 #endif

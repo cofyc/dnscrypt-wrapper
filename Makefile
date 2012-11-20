@@ -14,7 +14,6 @@ LIB_H = dnscrypt.h udp_request.h edns.h argparse/argparse.h logger.h
 
 LIB_OBJS += dnscrypt.o
 LIB_OBJS += udp_request.o
-LIB_OBJS += dnscrypt_server.o
 LIB_OBJS += edns.o
 LIB_OBJS += logger.o
 LIB_OBJS += main.o
