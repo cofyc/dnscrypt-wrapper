@@ -52,7 +52,7 @@
 
 #define DNS_DEFAULT_EDNS_PAYLOAD_SIZE 1252U
 
-#define DNSCRYPT_MAGIC_QUERY_LEN 8U
+#define DNSCRYPT_MAGIC_HEADER_LEN 8U
 #define DNSCRYPT_MAGIC_RESPONSE  "r6fnvWj8"
 
 #ifndef DNSCRYPT_MAX_PADDING
@@ -78,7 +78,10 @@
 #include "cert.h"
 
 #define DNSCRYPT_QUERY_HEADER_SIZE \
-    (DNSCRYPT_MAGIC_QUERY_LEN + crypto_box_PUBLICKEYBYTES + crypto_box_HALF_NONCEBYTES + crypto_box_MACBYTES)
+    (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_PUBLICKEYBYTES + crypto_box_HALF_NONCEBYTES + crypto_box_MACBYTES)
+
+#define DNSCRYPT_REPLY_HEADER_SIZE \
+    (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_HALF_NONCEBYTES * 2 + crypto_box_MACBYTES)
 
 struct context {
      struct sockaddr_storage local_sockaddr;
@@ -118,7 +121,7 @@ struct context {
      char *crypt_secretkey_file;
      uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
      uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
-     uint8_t uncurve_nmkey[crypto_box_BEFORENMBYTES];
+     uint64_t nonce_ts_last;
 };
 
 int dnscrypt_cmp_client_nonce(const uint8_t
@@ -151,7 +154,7 @@ print_binary_string(uint8_t *s, size_t count)
 }
 
 struct dnscrypt_query_header {
-    uint8_t magic_query[DNSCRYPT_MAGIC_QUERY_LEN];
+    uint8_t magic_query[DNSCRYPT_MAGIC_HEADER_LEN];
     uint8_t publickey[crypto_box_PUBLICKEYBYTES];
     uint8_t nonce[crypto_box_HALF_NONCEBYTES];
     uint8_t mac[crypto_box_MACBYTES];
@@ -159,8 +162,10 @@ struct dnscrypt_query_header {
 
 int dnscrypt_server_uncurve(struct context *c,
                             uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
+                            uint8_t nmkey[crypto_box_BEFORENMBYTES],
                             uint8_t * const buf, size_t * const lenp);
 int dnscrypt_server_curve(struct context *c,
                           uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
-                          uint8_t * const buf, size_t * const lenp);
+                          uint8_t nmkey[crypto_box_BEFORENMBYTES],
+                          uint8_t * const buf, size_t * const lenp, const size_t max_len);
 #endif

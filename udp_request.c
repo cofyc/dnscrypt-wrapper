@@ -261,8 +261,8 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
 
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header = (struct dnscrypt_query_header *)dns_query;
-    if (memcmp(dnscrypt_header->magic_query, CERT_MAGIC_HEADER, DNSCRYPT_MAGIC_QUERY_LEN) == 0) {
-        if (dnscrypt_server_uncurve(c, udp_request->client_nonce, dns_query, &dns_query_len) != 0) {
+    if (memcmp(dnscrypt_header->magic_query, CERT_MAGIC_HEADER, DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
+        if (dnscrypt_server_uncurve(c, udp_request->client_nonce, udp_request->nmkey, dns_query, &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             udp_request_kill(udp_request);
             return;
@@ -420,11 +420,18 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
         logger(LOG_ERR, "Received a reply that doesn't match any active query");
         return;
     }
+    size_t max_reply_size = DNS_MAX_PACKET_SIZE_UDP;
+    size_t max_len = dns_reply_len + DNSCRYPT_MAX_PADDING + DNSCRYPT_REPLY_HEADER_SIZE;
+    if (max_len > max_reply_size)
+        max_len = max_reply_size;
 
-    if (dnscrypt_server_curve(c, udp_request->client_nonce, dns_reply, &dns_reply_len) != 0) {
+    if (dnscrypt_server_curve(c, udp_request->client_nonce, udp_request->nmkey, dns_reply, &dns_reply_len, max_len) != 0) {
         logger(LOG_ERR, "Curving reply failed.");
         return;
     }
+
+    printf("dns_reply_len: %d\n", dns_reply_len);
+    print_binary_string(dns_reply, dns_reply_len);
 
     /* *INDENT-OFF* */
     sendto_with_retry(&(SendtoWithRetryCtx) {
