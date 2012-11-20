@@ -37,6 +37,11 @@ Run the program, for example (use keypairs in misc/ directory):
 
     $ ./dnscrypt-wrapper -r 8.8.8.8:53 -a 0.0.0.0:54 --provider-publickey-file=misc/public.key --provider-secretkey-file=misc/secret.key --crypt-secretkey-file=misc/crypt_secret.key --crypt-publickey-file=misc/crypt_public.key --provider-name=2.dnscrypt-cert.yechengfu.com -VV
 
+Run dnscrypt-proxy to test againt it:
+
+    $ ./dnscrypt-proxy -a 127.0.0.1:55 --pvider-name=2.dnscrypt-cert.yechengfu.com -r 127.0.0.1:54 --provider-key=4298:5F65:C295:DFAE:2BFB:20AD:5C47:F565:78EB:2404:EF83:198C:85DB:68F1:3E33:E952
+    $ dig -p 55 google.com @127.0.0.1
+
 Optional, add "-d/--daemonize" flag to run as daemon.
 
 Run "./dnscrypt-wrapper -h" to view help.
