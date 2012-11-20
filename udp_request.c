@@ -267,7 +267,10 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
             udp_request_kill(udp_request);
             return;
         }
-    } 
+        udp_request->is_dnscrypted = true;
+    } else {
+        udp_request->is_dnscrypted = false;
+    }
 
     struct dns_header *header = (struct dns_header *)dns_query;
     if (OPCODE(header) != QUERY) {
@@ -421,9 +424,11 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
     if (max_len > max_reply_size)
         max_len = max_reply_size;
 
-    if (dnscrypt_server_curve(c, udp_request->client_nonce, udp_request->nmkey, dns_reply, &dns_reply_len, max_len) != 0) {
-        logger(LOG_ERR, "Curving reply failed.");
-        return;
+    if (udp_request->is_dnscrypted) {
+        if (dnscrypt_server_curve(c, udp_request->client_nonce, udp_request->nmkey, dns_reply, &dns_reply_len, max_len) != 0) {
+            logger(LOG_ERR, "Curving reply failed.");
+            return;
+        }
     }
 
     /* *INDENT-OFF* */

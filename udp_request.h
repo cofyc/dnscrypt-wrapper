@@ -16,6 +16,7 @@ typedef struct UDPRequest_ {
     TAILQ_ENTRY(UDPRequest_) queue;
     uint8_t client_nonce[crypto_box_HALF_NONCEBYTES];
     uint8_t nmkey[crypto_box_BEFORENMBYTES];
+    bool is_dnscrypted;
     struct sockaddr_storage client_sockaddr;
     struct context *context;
     struct event *sendto_retry_timer;
