@@ -197,6 +197,18 @@ proxy_client_send_truncated(UDPRequest * const udp_request,
 }
 
 static void
+timeout_timer_cb(evutil_socket_t timeout_timer_handle, short ev_flags,
+                 void * const udp_request_)
+{
+    UDPRequest * const udp_request = udp_request_;
+        
+    (void) ev_flags;
+    (void) timeout_timer_handle;
+    logger(LOG_WARNING, "resolver timeout (UDP)");
+    udp_request_kill(udp_request);
+}
+
+static void
 client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
                    void *const context)
 {
@@ -344,6 +356,14 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
 
     udp_request->id = ntohs(header->id);
     udp_request->crc = questions_crc(header, dns_query_len, c->namebuff);
+    
+    udp_request->timeout_timer = evtimer_new(udp_request->context->event_loop, timeout_timer_cb, udp_request);
+    if (udp_request->timeout_timer) {
+        const struct timeval tv = { 
+            .tv_sec = (time_t) DNS_QUERY_TIMEOUT, .tv_usec = 0 
+        };  
+        evtimer_add(udp_request->timeout_timer, &tv);
+    }
 
     /* *INDENT-OFF* */
     sendto_with_retry(&(SendtoWithRetryCtx) {
