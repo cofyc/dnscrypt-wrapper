@@ -26,6 +26,9 @@ LIB_OBJS += cert.o
 LDADD += libnacl/build/localhost/lib/local/libnacl.a
 LDADD += libevent/.libs/libevent.a
 
+version.h:
+	./gen-version.sh > version.h
+
 argparse/.git:
 	@git submodule update --init
 
@@ -41,6 +44,8 @@ libevent/.libs/libevent.a:
 $(LIB_OBJS): $(LIB_H)
 
 all:: dnscrypt-wrapper
+
+main.o: version.h
 
 dnscrypt-wrapper: $(LIB_OBJS) $(LDADD)
 	$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $^

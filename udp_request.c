@@ -342,10 +342,6 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     udp_request->id = ntohs(header->id);
     udp_request->crc = questions_crc(header, dns_query_len, c->namebuff);
 
-    printf("dns_query_len: %ld\n", dns_query_len);
-    printf("id: %d\n", udp_request->id);
-    print_binary_string(dns_query, dns_query_len);
-
     /* *INDENT-OFF* */
     sendto_with_retry(&(SendtoWithRetryCtx) {
           .udp_request = udp_request,
@@ -429,9 +425,6 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
         logger(LOG_ERR, "Curving reply failed.");
         return;
     }
-
-    printf("dns_reply_len: %d\n", dns_reply_len);
-    print_binary_string(dns_reply, dns_reply_len);
 
     /* *INDENT-OFF* */
     sendto_with_retry(&(SendtoWithRetryCtx) {

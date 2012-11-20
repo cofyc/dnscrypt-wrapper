@@ -187,8 +187,6 @@ dnscrypt_server_uncurve(struct context *c,
         return -1;
     }
 
-    printf("nmkey:\n");
-    print_binary_string(nmkey, crypto_box_BEFORENMBYTES);
     uint8_t nonce[crypto_box_NONCEBYTES];
     memcpy(nonce, query_header->nonce, crypto_box_HALF_NONCEBYTES);
     memset(nonce + crypto_box_HALF_NONCEBYTES, 0, crypto_box_HALF_NONCEBYTES);
@@ -213,8 +211,6 @@ dnscrypt_server_uncurve(struct context *c,
     *lenp = len - DNSCRYPT_QUERY_HEADER_SIZE;
     memmove(buf, buf + DNSCRYPT_QUERY_HEADER_SIZE, *lenp);
 
-    printf("nmkey:\n");
-    print_binary_string(nmkey, crypto_box_BEFORENMBYTES);
     return 0;
 }
 
@@ -260,18 +256,9 @@ dnscrypt_server_curve(struct context *c,
     len = dnscrypt_pad(boxed + crypto_box_MACBYTES, len, max_len - DNSCRYPT_REPLY_HEADER_SIZE);
     memset(boxed - crypto_box_BOXZEROBYTES, 0, crypto_box_ZEROBYTES);
 
-    printf("nmkey: \n");
-    print_binary_string(nmkey, crypto_box_BEFORENMBYTES);
     if (crypto_box_afternm(boxed - crypto_box_BOXZEROBYTES, boxed - crypto_box_BOXZEROBYTES, len + crypto_box_ZEROBYTES, nonce, nmkey) != 0) {
         return -1;
     }
-
-    /*printf("nonce length: %ld\n", crypto_box_NONCEBYTES);*/
-    /*print_binary_string(nonce, crypto_box_NONCEBYTES);*/
-    printf("nmkey: \n");
-    print_binary_string(nmkey, crypto_box_BEFORENMBYTES);
-    /*printf("Data length: %ld\n", len + crypto_box_ZEROBYTES);*/
-    /*print_binary_string(boxed - crypto_box_BOXZEROBYTES, len + crypto_box_ZEROBYTES);*/
 
     memcpy(buf, DNSCRYPT_MAGIC_RESPONSE, DNSCRYPT_MAGIC_HEADER_LEN);
     memcpy(buf + DNSCRYPT_MAGIC_HEADER_LEN, nonce, crypto_box_NONCEBYTES);

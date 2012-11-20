@@ -1,5 +1,7 @@
 #include "dnscrypt.h"
 #include "argparse/argparse.h"
+#include "version.h"
+
 /**
  * This is dnscrypt wrapper, which enables dnscrypt support for any dns server.
  */
@@ -8,6 +10,13 @@ static const char *const config_usage[] = {
     "dnscrypt-wrapper [options]",
     NULL
 };
+
+int
+show_version_cb(struct argparse *this, const struct argparse_option *option)
+{
+    printf("dnscrypt-wrapper %s\n", the_version);
+    exit(0);
+}
 
 static int
 sockaddr_from_ip_and_port(struct sockaddr_storage *const sockaddr,
@@ -183,14 +192,17 @@ main(int argc, const char **argv)
 
     int gen_provider_keypair = 0;
     int gen_crypt_keypair = 0;
+    int verbose = 0;
     struct argparse argparse;
     struct argparse_option options[] = {
         OPT_HELP(),
+        OPT_BOOLEAN('v', "version", NULL, "show version info", show_version_cb),
         OPT_STRING('a', "listen-address", &c.listen_address, "local address to listen (default: 0.0.0.0:53)"),
         OPT_STRING('r', "resolver-address", &c.resolver_address, "upstream dns resolver server (<address:port>)"),
         OPT_STRING('u', "user", &c.user, "run as given user"),
         OPT_BOOLEAN('d', "daemonize", &c.daemonize, "run as daemon (default: off)"),
         OPT_BOOLEAN('t', "tcp-only", &c.tcp_only, "use tcp only (default: off)"),
+        OPT_BOOLEAN('V', "verbose", &verbose, "show verbose logs (specify more -VVV to increase verbosity)"),
         OPT_STRING('l', "logfile", &c.logfile, "log file path (default: stdout)"),
         OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
         OPT_STRING(0, "provider-publickey-file", &c.provider_publickey_file, "provider public key file"),
@@ -248,6 +260,10 @@ main(int argc, const char **argv)
     if (c.logfile) {
         logger_logfile = c.logfile;
     }
+    logger_verbosity = LOG_NOTICE; // default
+    logger_verbosity += verbose;
+    if (logger_verbosity > LOG_DEBUG)
+        logger_verbosity = LOG_DEBUG;
 
     if (!c.resolver_address) {
         logger(LOG_ERR, "You must specify --resolver-address.\n\n");
