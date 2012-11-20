@@ -10,7 +10,7 @@ LDFLAGS = -lm
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 
-LIB_H = dnscrypt.h udp_request.h edns.h logger.h event2/event.h
+LIB_H = dnscrypt.h udp_request.h edns.h logger.h dnscrypt-proxy/src/libevent/include/event2/event.h
 
 LIB_OBJS += dnscrypt.o
 LIB_OBJS += udp_request.o
@@ -35,7 +35,7 @@ argparse/argparse.h:
 argparse/argparse.o: argparse/argparse.h
 	@make -C argparse argparse.o
 
-event2/event.h: dnscrypt-proxy/src/libevent/.libs/libevent.a
+dnscrypt-proxy/src/libevent/include/event2/event.h: dnscrypt-proxy/src/libevent/.libs/libevent.a
 
 dnscrypt-proxy/autogen.sh:
 	@git submodule update --init
