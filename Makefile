@@ -4,13 +4,19 @@ all::
 CC = cc
 RM = rm -rf
 
+uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+
 EXTRA_CFLAGS = # dynamically added/remoted
 CFLAGS = -O2 -std=c99 -pedantic -Wall $(EXTRA_CFLAGS) -Idnscrypt-proxy/src/libevent/include -Idnscrypt-proxy/src/libnacl/build/localhost/include/local
 LDFLAGS = -lm
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 
-LIB_H = dnscrypt.h udp_request.h edns.h logger.h event2/event.h
+ifeq ($(uname_S),Linux)
+	EXTRA_CFLAGS += -lrt
+endif
+
+LIB_H = dnscrypt.h udp_request.h edns.h logger.h dnscrypt-proxy/src/libevent/include/event2/event.h
 
 LIB_OBJS += dnscrypt.o
 LIB_OBJS += udp_request.o
@@ -35,7 +41,7 @@ argparse/argparse.h:
 argparse/argparse.o: argparse/argparse.h
 	@make -C argparse argparse.o
 
-event2/event.h: dnscrypt-proxy/src/libevent/.libs/libevent.a
+dnscrypt-proxy/src/libevent/include/event2/event.h: dnscrypt-proxy/src/libevent/.libs/libevent.a
 
 dnscrypt-proxy/autogen.sh:
 	@git submodule update --init
