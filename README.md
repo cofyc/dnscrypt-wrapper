@@ -16,6 +16,7 @@ Only udp protocol is supported now, tcp is work in progress.
 INSTALLATION
 ============
 
+    $ git clone git://github.com/Cofyc/dnscrypt-wrapper.git
     $ make
     $ make install
     

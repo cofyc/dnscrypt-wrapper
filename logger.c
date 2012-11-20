@@ -50,7 +50,7 @@ void
 logger_lograw(int priority, const char *msg)
 {
     FILE *fp;
-    const char *priority_flag;
+    const char *priority_flag = NULL;
 
     if (priority > logger_verbosity)
         return;

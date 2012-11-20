@@ -1,6 +1,8 @@
 #ifndef COMPAT_H
 #define COMPAT_H
 
+#define _GNU_SOURCE
+
 /* ISO C */
 #include <assert.h>
 #include <complex.h>
@@ -34,6 +36,7 @@
 #include <uuid/uuid.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <arpa/inet.h>
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[1]))
 #define COMPILER_ASSERT(X) (void) sizeof(char[(X) ? 1 : -1])

@@ -1,3 +1,6 @@
 [submodule "argparse"]
 	path = argparse
 	url = git@github.com:Cofyc/argparse.git
+[submodule "dnscrypt-proxy"]
+	path = dnscrypt-proxy
+	url = git://github.com/opendns/dnscrypt-proxy.git

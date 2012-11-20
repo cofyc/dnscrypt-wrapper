@@ -153,7 +153,7 @@ static int
 write_to_file(const char *path, char *buf, size_t count)
 {
     int fd;
-    fd = open(path, O_WRONLY | O_CREAT);
+    fd = open(path, O_WRONLY | O_CREAT, 0444);
     if (fd < 0) {
         printf("Cannnot open %s to write.\n", path);
         return -1;
