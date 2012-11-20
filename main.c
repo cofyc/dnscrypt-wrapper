@@ -201,7 +201,7 @@ main(int argc, const char **argv)
         OPT_STRING('r', "resolver-address", &c.resolver_address, "upstream dns resolver server (<address:port>)"),
         OPT_STRING('u', "user", &c.user, "run as given user"),
         OPT_BOOLEAN('d', "daemonize", &c.daemonize, "run as daemon (default: off)"),
-        OPT_BOOLEAN('t', "tcp-only", &c.tcp_only, "use tcp only (default: off)"),
+        /*OPT_BOOLEAN('t', "tcp-only", &c.tcp_only, "use tcp only (default: off)"),*/
         OPT_BOOLEAN('V', "verbose", &verbose, "show verbose logs (specify more -VVV to increase verbosity)"),
         OPT_STRING('l', "logfile", &c.logfile, "log file path (default: stdout)"),
         OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
