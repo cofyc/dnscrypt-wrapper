@@ -155,13 +155,10 @@ write_to_file(const char *path, char *buf, size_t count)
     int fd;
     fd = open(path, O_WRONLY | O_CREAT, 0444);
     if (fd < 0) {
-        printf("Cannnot open %s to write.\n", path);
         return -1;
     }
-    chmod(path, 0444);
     if (safe_write(fd, buf, count, 3) != count) {
-        printf("Cannnot write to %s.\n", path);
-        return -1;
+        return -2;
     }
     return 0;
 }
@@ -172,13 +169,11 @@ read_from_file(const char *path, char *buf, size_t count)
     int fd;
     fd = open(path, O_RDONLY);
     if (fd < 0) {
-        printf("Cannot open %s.\n", path);
         return -1;
     }
     if (safe_read(fd, buf, count) != count) {
-        printf("Invalid file: %s\n", path);
         close(fd);
-        return -1;
+        return -2;
     }
     close(fd);
     return 0;
@@ -192,6 +187,7 @@ main(int argc, const char **argv)
 
     int gen_provider_keypair = 0;
     int gen_crypt_keypair = 0;
+    int gen_cert_file = 0;
     int verbose = 0;
     struct argparse argparse;
     struct argparse_option options[] = {
@@ -204,19 +200,21 @@ main(int argc, const char **argv)
         /*OPT_BOOLEAN('t', "tcp-only", &c.tcp_only, "use tcp only (default: off)"),*/
         OPT_BOOLEAN('V', "verbose", &verbose, "show verbose logs (specify more -VVV to increase verbosity)"),
         OPT_STRING('l', "logfile", &c.logfile, "log file path (default: stdout)"),
-        OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
-        OPT_STRING(0, "provider-publickey-file", &c.provider_publickey_file, "provider public key file"),
-        OPT_STRING(0, "provider-secretkey-file", &c.provider_secretkey_file, "provider secret key file"),
         OPT_BOOLEAN(0, "gen-provider-keypair", &gen_provider_keypair, "generate provider key pair"),
         OPT_STRING(0, "crypt-publickey-file", &c.crypt_publickey_file, "crypt public key file"),
         OPT_STRING(0, "crypt-secretkey-file", &c.crypt_secretkey_file, "crypt secret key file"),
         OPT_BOOLEAN(0, "gen-crypt-keypair", &gen_crypt_keypair, "generate crypt key pair"),
+        OPT_STRING(0, "provider-publickey-file", &c.provider_publickey_file, "provider public key file"),
+        OPT_STRING(0, "provider-secretkey-file", &c.provider_secretkey_file, "provider secret key file"),
+        OPT_BOOLEAN(0, "gen-cert-file", &gen_cert_file, "generate pre-signed certificate"),
+        OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
+        OPT_STRING(0, "provider-cert-file", &c.provider_cert_file, "use this to self-serve cert file"),
         OPT_END(),
     };
 
     argparse_init(&argparse, options, config_usage, 0);
     argc = argparse_parse(&argparse, argc, argv);
-    
+
     if (gen_provider_keypair) {
         uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
         uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
@@ -226,8 +224,7 @@ main(int argc, const char **argv)
             char fingerprint[80];
             dnscrypt_key_to_fingerprint(fingerprint, provider_publickey);
             printf("Public key fingerprint: %s\n", fingerprint);
-            if (write_to_file("public.key", (char *)provider_publickey, crypto_sign_ed25519_PUBLICKEYBYTES) == 0 &&
-                write_to_file("secret.key", (char *)provider_secretkey, crypto_sign_ed25519_SECRETKEYBYTES) == 0) {
+            if (write_to_file("public.key", (char *)provider_publickey, crypto_sign_ed25519_PUBLICKEYBYTES) == 0 && write_to_file("secret.key", (char *)provider_secretkey, crypto_sign_ed25519_SECRETKEYBYTES) == 0) {
                 printf("Keys are stored in public.key & secret.key.\n");
                 exit(0);
             }
@@ -265,48 +262,6 @@ main(int argc, const char **argv)
     if (logger_verbosity > LOG_DEBUG)
         logger_verbosity = LOG_DEBUG;
 
-    if (!c.resolver_address) {
-        logger(LOG_ERR, "You must specify --resolver-address.\n\n");
-        argparse_usage(&argparse);
-        exit(0);
-    }
-
-    if (!c.listen_address)
-        c.listen_address = "0.0.0.0:53";
-    c.udp_listener_handle = -1;
-    c.udp_resolver_handle = -1;
-    c.connections_max = 250;
-    if (c.user) {
-        struct passwd *pw = getpwnam(c.user);
-        if (pw == NULL) {
-            logger(LOG_ERR, "Unknown user: [%s]", c.user);
-            exit(1);
-        }
-        c.user_id = pw->pw_uid;
-        c.user_group = pw->pw_gid;
-        c.user_dir = strdup(pw->pw_dir);
-    }
-
-    if (!c.provider_name) {
-        logger(LOG_ERR, "You must specify --provider-name.");
-        exit(1);
-    }
-
-    // provider public & secret key
-    if (!c.provider_publickey_file || !c.provider_secretkey_file) {
-        logger(LOG_ERR, "You must provide --provider-publickey-file and --provider-secretkey-file.");
-        exit(1);
-    }
-    if (read_from_file(c.provider_publickey_file, (char *)c.provider_publickey, crypto_sign_ed25519_PUBLICKEYBYTES) == 0 && read_from_file(c.provider_secretkey_file, (char *)c.provider_secretkey, crypto_sign_ed25519_SECRETKEYBYTES) == 0) {
-    } else {
-        exit(1);
-    }
-    {
-        char fingerprint[80];
-        dnscrypt_key_to_fingerprint(fingerprint, c.provider_publickey);
-        logger(LOG_INFO, "Public key fingerprint: %s", fingerprint);
-    }
-
     // crypt public & secret key
     if (!c.crypt_publickey_file || !c.crypt_secretkey_file) {
         logger(LOG_ERR, "You must provide --crypt-secretkey-file and --crypt-secretkey-file.");
@@ -320,6 +275,77 @@ main(int argc, const char **argv)
         char fingerprint[80];
         dnscrypt_key_to_fingerprint(fingerprint, c.crypt_publickey);
         logger(LOG_INFO, "Crypt public key fingerprint: %s", fingerprint);
+    }
+
+    // generate signed certificate
+    if (gen_cert_file) {
+        if (!c.crypt_publickey_file || !c.crypt_secretkey_file) {
+            logger(LOG_ERR, "You must provide --crypt-secretkey-file and --crypt-secretkey-file.");
+            exit(1);
+        }
+        // provider public & secret key
+        if (!c.provider_publickey_file || !c.provider_secretkey_file) {
+            logger(LOG_ERR, "You must provide --provider-publickey-file and --provider-secretkey-file.");
+            exit(1);
+        }
+        if (read_from_file(c.provider_publickey_file, (char *)c.provider_publickey, crypto_sign_ed25519_PUBLICKEYBYTES) == 0 && read_from_file(c.provider_secretkey_file, (char *)c.provider_secretkey, crypto_sign_ed25519_SECRETKEYBYTES) == 0) {
+        } else {
+            exit(1);
+        }
+        logger(LOG_NOTICE, "Generating pre-signed certificate.");
+        struct SignedCert *signed_cert = cert_build_cert(c.crypt_publickey);
+        if (!signed_cert || cert_sign(signed_cert, c.provider_secretkey) != 0) {
+            logger(LOG_NOTICE, "Failed.");
+            exit(1);
+        }
+        logger(LOG_NOTICE, "TXT record for signed-certificate:");
+        printf("* Record for nsd:\n");
+        cert_display_txt_record(signed_cert);
+        printf("\n");
+        printf("* Record for tinydns:\n");
+        cert_display_txt_record_tinydns(signed_cert);
+        printf("\n");
+        if (!write_to_file("dnscrypt.cert", (char *)signed_cert, sizeof(struct SignedCert)) == 0) {
+            logger(LOG_NOTICE, "Writing to %s failed. (Maybe it exists now?)", "dnscrypt.cert");
+            exit(1);
+        }
+        logger(LOG_NOTICE, "Certificate stored in %s.", "dnscrypt.cert");
+        exit(0);
+    }
+
+    if (!c.resolver_address) {
+        logger(LOG_ERR, "You must specify --resolver-address.\n\n");
+        argparse_usage(&argparse);
+        exit(0);
+    }
+
+    if (!c.listen_address)
+        c.listen_address = "0.0.0.0:53";
+
+    c.udp_listener_handle = -1;
+    c.udp_resolver_handle = -1;
+    c.connections_max = 250;
+
+    if (c.user) {
+        struct passwd *pw = getpwnam(c.user);
+        if (pw == NULL) {
+            logger(LOG_ERR, "Unknown user: [%s]", c.user);
+            exit(1);
+        }
+        c.user_id = pw->pw_uid;
+        c.user_group = pw->pw_gid;
+        c.user_dir = strdup(pw->pw_dir);
+    }
+
+    if (c.provider_cert_file) {
+        if (!c.provider_name) {
+            logger(LOG_ERR, "You must specify --provider-name with --provider-cert-file.");
+            exit(1);
+        }
+        if (read_from_file(c.provider_cert_file, (char *)&c.signed_cert, sizeof(struct SignedCert)) != 0) {
+            logger(LOG_ERR, "%s is not valid signed certficate.", c.provider_cert_file);
+            exit(1);
+        }
     }
 
     if (c.daemonize) {

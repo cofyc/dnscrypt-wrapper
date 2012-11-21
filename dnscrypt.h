@@ -116,6 +116,8 @@ struct context {
      char *provider_name;
      char *provider_publickey_file;
      char *provider_secretkey_file;
+     char *provider_cert_file;
+     struct SignedCert signed_cert;
      uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
      uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
      char *crypt_publickey_file;
