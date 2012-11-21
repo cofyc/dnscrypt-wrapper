@@ -23,7 +23,7 @@ typedef struct Salsa20Random_ {
     HCRYPTPROV    hcrypt_prov;
 #endif
     int           random_data_source_fd;
-    _Bool         initialized;
+    bool         initialized;
 } Salsa20Random;
 
 static Salsa20Random stream = {

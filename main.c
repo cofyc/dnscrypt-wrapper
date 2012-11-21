@@ -1,9 +1,9 @@
 #include "dnscrypt.h"
 #include "argparse/argparse.h"
 #include "version.h"
-
 /**
- * This is dnscrypt wrapper, which enables dnscrypt support for any dns server.
+ * This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to add
+ * dnscrypt support to any name resolver.
  */
 
 static const char *const config_usage[] = { 
@@ -27,9 +27,9 @@ sockaddr_from_ip_and_port(struct sockaddr_storage *const sockaddr,
     char sockaddr_port[INET6_ADDRSTRLEN + sizeof "[]:65535"];
     int sockaddr_len_int;
     char *pnt;
-    _Bool has_column = 0;
-    _Bool has_columns = 0;
-    _Bool has_brackets = *ip == '[';
+    bool has_column = 0;
+    bool has_columns = 0;
+    bool has_brackets = *ip == '[';
 
     if ((pnt = strchr(ip, ':')) != NULL) {
         has_column = 1;
@@ -270,33 +270,6 @@ main(int argc, const char **argv)
         argparse_usage(&argparse);
         exit(0);
     }
-
-    // test libnacl
-    /*uint8_t server_publickey[crypto_box_PUBLICKEYBYTES];*/
-    /*uint8_t server_secretkey[crypto_box_SECRETKEYBYTES];*/
-    /*uint8_t client_publickey[crypto_box_PUBLICKEYBYTES];*/
-    /*uint8_t client_secretkey[crypto_box_SECRETKEYBYTES];*/
-    /*uint8_t nonce[crypto_box_NONCEBYTES] = {1};*/
-    /*printf("gen client key pair: %d\n", crypto_box_keypair(client_publickey, client_secretkey));*/
-    /*salsa20_random_stir();*/
-    /*printf("gen server key pair: %d\n", crypto_box_keypair(server_publickey, server_secretkey));*/
-    /*salsa20_random_stir();*/
-    /*uint8_t client_nmkey[crypto_box_BEFORENMBYTES];*/
-    /*uint8_t server_nmkey[crypto_box_BEFORENMBYTES];*/
-    /*// client nmkey*/
-    /*memcpy(client_nmkey, server_publickey, crypto_box_PUBLICKEYBYTES);*/
-    /*printf("gen client nmkey: %d\n", crypto_box_beforenm(client_nmkey, client_nmkey, client_secretkey));*/
-    /*// server nmkey*/
-    /*memcpy(server_nmkey, client_publickey, crypto_box_PUBLICKEYBYTES);*/
-    /*printf("gen server nmkey: %d\n", crypto_box_beforenm(server_nmkey, server_nmkey, server_secretkey));*/
-    /*uint8_t data[1024];*/
-    /*memset(data, 0, crypto_box_ZEROBYTES);*/
-    /*memcpy(data + crypto_box_ZEROBYTES, "abc", 4);*/
-    /*printf("afternm: %d\n", crypto_box_afternm((unsigned char*)data, (unsigned char *)data, 4 + crypto_box_ZEROBYTES, nonce, client_nmkey));*/
-    /**//*memset(data, 0, crypto_box_BOXZEROBYTES);*/
-    /*printf("open afternm: %d\n", crypto_box_open_afternm((unsigned char*)data, (unsigned char *)data, 4 + crypto_box_ZEROBYTES, nonce, server_nmkey));*/
-    /*printf("%s\n", data + crypto_box_ZEROBYTES);*/
-    /*exit(0);*/
 
     if (!c.listen_address)
         c.listen_address = "0.0.0.0:53";

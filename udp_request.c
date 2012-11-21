@@ -116,7 +116,7 @@ sendto_with_retry(SendtoWithRetryCtx * const ctx)
     SendtoWithRetryCtx *ctx_cb;
     UDPRequest *udp_request = ctx->udp_request;
     int err;
-    _Bool retriable;
+    bool retriable;
 
     if (sendto(ctx->handle, ctx->buffer, ctx->length, ctx->flags,
                ctx->dest_addr, ctx->dest_len) == (ssize_t) ctx->length) {
