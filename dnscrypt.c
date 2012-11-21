@@ -138,24 +138,38 @@ dnscrypt_fingerprint_to_key(const char * const fingerprint,
     return -1;
 }
 
+/**
+ * Add random padding to a buffer, according to a client nonce.
+ * The length has to depend on the query in order to avoid reply attacks.
+ *
+ * @param buf a buffer
+ * @param len the initial size of the buffer
+ * @param max_len the maximum size
+ * @param nonce a nonce, made of the client nonce repeated twice
+ * @param secretkey
+ * @return the new size, after padding
+ */
 size_t
-dnscrypt_pad(uint8_t *buf, const size_t len, const size_t max_len)
+dnscrypt_pad(uint8_t *buf, const size_t len, const size_t max_len, const uint8_t *nonce, 
+             const uint8_t *secretkey)
 {
     uint8_t *buf_padding_area = buf + len;
-    size_t padded_len, padding_len;
+    size_t padded_len;
+    uint32_t rnd;
 
     // no padding
     if (max_len < len + DNSCRYPT_MIN_PAD_LEN)
         return len;
 
-    padded_len = len + DNSCRYPT_MIN_PAD_LEN + salsa20_random_uniform((uint32_t)(max_len - len - DNSCRYPT_MIN_PAD_LEN + 1));
+    assert(nonce[crypto_box_HALF_NONCEBYTES] == nonce[0]);
+
+    crypto_stream((unsigned char*)&rnd, (unsigned long long)sizeof(rnd), nonce, secretkey);
+    padded_len = len + DNSCRYPT_MIN_PAD_LEN + rnd % (max_len - len - DNSCRYPT_MIN_PAD_LEN + 1);
     padded_len += DNSCRYPT_BLOCK_SIZE - padded_len % DNSCRYPT_BLOCK_SIZE;
     if (padded_len > max_len)
         padded_len = max_len;
 
-    assert(padded_len >= len);
-    padding_len = padded_len - len;
-    memset(buf_padding_area, 0, padded_len);
+    memset(buf_padding_area, 0, padded_len - len);
     *buf_padding_area = 0x80;
 
     return padded_len;
@@ -214,6 +228,26 @@ dnscrypt_server_uncurve(struct context *c,
     return 0;
 }
 
+void
+add_server_nonce(struct context *c, uint8_t *nonce)
+{
+    uint64_t ts;
+    uint64_t tsn;
+    uint32_t suffix;
+    ts = dnscrypt_hrtime();
+    if (ts <= c->nonce_ts_last) {
+        ts = c->nonce_ts_last + 1;
+    }
+    c->nonce_ts_last = ts;
+    tsn = (ts << 10) | (salsa20_random() & 0x3ff);
+#if (BYTE_ORDER == LITTLE_ENDIAN)
+    tsn = (((uint64_t)htonl((uint32_t)tsn)) << 32) | htonl((uint32_t)(tsn >> 32));
+#endif
+    memcpy(nonce + crypto_box_HALF_NONCEBYTES, &tsn, 8);
+    suffix = salsa20_random();
+    memcpy(nonce + crypto_box_HALF_NONCEBYTES + 8, &suffix, 4);
+}
+
 //  8 bytes: magic header (CERT_MAGIC_HEADER)
 // 12 bytes: the client's nonce
 // 12 bytes: server nonce extension
@@ -233,28 +267,15 @@ dnscrypt_server_curve(struct context *c,
     size_t len = *lenp;
 
     memcpy(nonce, client_nonce, crypto_box_HALF_NONCEBYTES);
-
-    // add server nonce extension
-    uint64_t ts;
-    uint64_t tsn;
-    uint32_t suffix;
-    ts = dnscrypt_hrtime();
-    if (ts <= c->nonce_ts_last) {
-        ts = c->nonce_ts_last + 1;
-    }
-    c->nonce_ts_last = ts;
-    tsn = (ts << 10) | (salsa20_random() & 0x3ff);
-#if (BYTE_ORDER == LITTLE_ENDIAN)
-    tsn = (((uint64_t)htonl((uint32_t)tsn)) << 32) | htonl((uint32_t)(tsn >> 32));
-#endif
-    memcpy(nonce + crypto_box_HALF_NONCEBYTES, &tsn, 8);
-    suffix = salsa20_random();
-    memcpy(nonce + crypto_box_HALF_NONCEBYTES + 8, &suffix, 4);
+    memcpy(nonce + crypto_box_HALF_NONCEBYTES, client_nonce, crypto_box_HALF_NONCEBYTES);
 
     boxed = buf + DNSCRYPT_REPLY_BOX_OFFSET;
     memmove(boxed + crypto_box_MACBYTES, buf, len);
-    len = dnscrypt_pad(boxed + crypto_box_MACBYTES, len, max_len - DNSCRYPT_REPLY_HEADER_SIZE);
+    len = dnscrypt_pad(boxed + crypto_box_MACBYTES, len, max_len - DNSCRYPT_REPLY_HEADER_SIZE, nonce, c->crypt_secretkey);
     memset(boxed - crypto_box_BOXZEROBYTES, 0, crypto_box_ZEROBYTES);
+
+    // add server nonce extension
+    add_server_nonce(c, nonce);
 
     if (crypto_box_afternm(boxed - crypto_box_BOXZEROBYTES, boxed - crypto_box_BOXZEROBYTES, len + crypto_box_ZEROBYTES, nonce, nmkey) != 0) {
         return -1;

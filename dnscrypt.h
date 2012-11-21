@@ -6,6 +6,7 @@
 #include <event2/event.h>
 #include <event2/util.h>
 #include <crypto_box.h>
+#include <crypto_stream.h>
 #include <crypto_sign_ed25519.h>
 #include <randombytes.h>
 
