@@ -279,10 +279,6 @@ main(int argc, const char **argv)
 
     // generate signed certificate
     if (gen_cert_file) {
-        if (!c.crypt_publickey_file || !c.crypt_secretkey_file) {
-            logger(LOG_ERR, "You must provide --crypt-secretkey-file and --crypt-secretkey-file.");
-            exit(1);
-        }
         // provider public & secret key
         if (!c.provider_publickey_file || !c.provider_secretkey_file) {
             logger(LOG_ERR, "You must provide --provider-publickey-file and --provider-secretkey-file.");
