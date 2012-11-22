@@ -106,7 +106,6 @@ struct context {
      UDPRequestQueue udp_request_queue;
      struct event_base *event_loop;
      unsigned int connections;
-     unsigned int connections_max;
      size_t edns_payload_size;
 
      /* Domain name shared buffer. */

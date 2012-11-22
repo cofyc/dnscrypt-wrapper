@@ -319,7 +319,6 @@ main(int argc, const char **argv)
 
     c.udp_listener_handle = -1;
     c.udp_resolver_handle = -1;
-    c.connections_max = 250;
 
     if (c.user) {
         struct passwd *pw = getpwnam(c.user);

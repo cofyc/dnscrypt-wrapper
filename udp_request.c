@@ -319,14 +319,8 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
         free(udp_request);
         return;
     }
-    if (c->connections >= c->connections_max) {
-        if (udp_listener_kill_oldest_request(c) != 0) {
-            // tcp
-        }
-    }
 
     c->connections++;
-    assert(c->connections <= c->connections_max);
     TAILQ_INSERT_TAIL(&c->udp_request_queue, udp_request, queue);
     memset(&udp_request->status, 0, sizeof(udp_request->status));
     udp_request->status.is_in_queue = 1;

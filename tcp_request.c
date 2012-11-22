@@ -303,15 +303,7 @@ tcp_connection_cb(struct evconnlistener * const tcp_conn_listener,
         free(tcp_request);
         return;
     }
-    if (c->connections >=
-        c->connections_max) {
-        if (tcp_listener_kill_oldest_request(c) != 0) {
-            udp_listener_kill_oldest_request(c);
-        }
-    }
     c->connections++;
-    assert(c->connections
-           <= c->connections_max);
     TAILQ_INSERT_TAIL(&c->tcp_request_queue,
                       tcp_request, queue);
     memset(&tcp_request->status, 0, sizeof tcp_request->status);
