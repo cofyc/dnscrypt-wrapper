@@ -85,7 +85,7 @@ udp_request_kill(UDPRequest * const udp_request)
     free(udp_request);
 }
 
-static int
+int
 udp_listener_kill_oldest_request(struct context *c)
 {
     if (TAILQ_EMPTY(&c->udp_request_queue))
@@ -333,10 +333,6 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     dns_query_len = (size_t) nread;
     assert(dns_query_len <= sizeof(dns_query));
 
-    if (udp_request->context->tcp_only != 0) {
-        proxy_client_send_truncated(udp_request, dns_query, dns_query_len);
-        return;
-    }
     assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - DNSCRYPT_QUERY_HEADER_SIZE >
            dns_query_len);
 
@@ -473,7 +469,7 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
 }
 
 int
-udp_listern_bind(struct context *c)
+udp_listener_bind(struct context *c)
 {
     // listen socket & bind
     assert(c->udp_listener_handle == -1);

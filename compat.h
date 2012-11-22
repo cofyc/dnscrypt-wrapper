@@ -37,6 +37,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <sys/queue.h>
+#include <netinet/tcp.h>
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[1]))
 #define COMPILER_ASSERT(X) (void) sizeof(char[(X) ? 1 : -1])

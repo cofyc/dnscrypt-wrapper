@@ -2,8 +2,10 @@
 #define DNSCRYPT_H
 
 #include "compat.h"
-#include <sys/queue.h>
 #include <event2/event.h>
+#include <event2/listener.h>
+#include <event2/bufferevent.h>
+#include <event2/buffer.h>
 #include <event2/util.h>
 #include <crypto_box.h>
 #include <crypto_stream.h>
@@ -72,6 +74,7 @@
 
 #include "edns.h"
 #include "udp_request.h"
+#include "tcp_request.h"
 #include "rfc1035.h"
 #include "logger.h"
 #include "salsa20_random.h"
@@ -80,6 +83,8 @@
 
 #define DNSCRYPT_QUERY_HEADER_SIZE \
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_PUBLICKEYBYTES + crypto_box_HALF_NONCEBYTES + crypto_box_MACBYTES)
+#define DNSCRYPT_RESPONSE_HEADER_SIZE \
+    (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_NONCEBYTES + crypto_box_MACBYTES)
 
 #define DNSCRYPT_REPLY_HEADER_SIZE \
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_HALF_NONCEBYTES * 2 + crypto_box_MACBYTES)
@@ -91,6 +96,8 @@ struct context {
      ev_socklen_t resolver_sockaddr_len;
      const char *resolver_address;
      const char *listen_address;
+     struct evconnlistener *tcp_conn_listener;
+     struct event *tcp_accept_timer;
      struct event *udp_listener_event;
      struct event *udp_resolver_event;
      evutil_socket_t udp_listener_handle;
@@ -107,7 +114,6 @@ struct context {
 
      /* Process stuff. */
      bool daemonize;
-     bool tcp_only;
      char *user;
      uid_t user_id;
      gid_t user_group;

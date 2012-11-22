@@ -197,7 +197,6 @@ main(int argc, const char **argv)
         OPT_STRING('r', "resolver-address", &c.resolver_address, "upstream dns resolver server (<address:port>)"),
         OPT_STRING('u', "user", &c.user, "run as given user"),
         OPT_BOOLEAN('d', "daemonize", &c.daemonize, "run as daemon (default: off)"),
-        /*OPT_BOOLEAN('t', "tcp-only", &c.tcp_only, "use tcp only (default: off)"),*/
         OPT_BOOLEAN('V', "verbose", &verbose, "show verbose logs (specify more -VVV to increase verbosity)"),
         OPT_STRING('l', "logfile", &c.logfile, "log file path (default: stdout)"),
         OPT_BOOLEAN(0, "gen-provider-keypair", &gen_provider_keypair, "generate provider key pair"),
@@ -367,11 +366,13 @@ main(int argc, const char **argv)
         exit(1);
     }
 
-    if (udp_listern_bind(&c) != 0) {
+    if (udp_listener_bind(&c) != 0 ||
+        tcp_listener_bind(&c) != 0) {
         exit(1);
     }
 
-    if (udp_listener_start(&c) != 0) {
+    if (udp_listener_start(&c) != 0 ||
+        tcp_listener_start(&c) != 0) {
         logger(LOG_ERR, "Unable to start udp listener.");
         exit(1);
     }
@@ -379,6 +380,11 @@ main(int argc, const char **argv)
     revoke_privileges(&c);
 
     event_base_dispatch(c.event_loop);
+
+    logger(LOG_INFO, "Stopping proxy");
+    udp_listener_stop(&c);
+    tcp_listener_stop(&c);
+    event_base_free(c.event_loop);
 
     return 0;
 }

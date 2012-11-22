@@ -11,8 +11,6 @@ This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to add dnscry
 This software is modified from
 [dnscrypt-proxy](https://github.com/opendns/dnscrypt-proxy).
 
-Only udp protocol is supported now, tcp is work in progress.
-
 INSTALLATION
 ============
 
