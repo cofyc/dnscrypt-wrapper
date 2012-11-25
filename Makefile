@@ -32,8 +32,8 @@ LDADD += argparse/argparse.o
 LDADD += dnscrypt-proxy/src/libnacl/build/localhost/lib/local/libnacl.a
 LDADD += dnscrypt-proxy/src/libevent/.libs/libevent.a
 
-version.h:
-	./gen-version.sh > version.h
+version.h: FORCE
+	@./gen-version.sh version.h
 
 argparse/argparse.h:
 	@git submodule update --init
@@ -71,4 +71,4 @@ clean:
 clean-all: clean
 	cd dnscrypt-proxy; make clean
 
-.PHONY: all install uninstall clean test
+.PHONY: all install uninstall clean test FORCE
