@@ -35,18 +35,12 @@ LDADD += dnscrypt-proxy/src/libevent/.libs/libevent.a
 version.h: FORCE
 	@./gen-version.sh version.h
 
-argparse/argparse.h:
-	@git submodule update --init
-
 argparse/argparse.o: argparse/argparse.h
 	@make -C argparse argparse.o
 
 dnscrypt-proxy/src/libevent/include/event2/event.h: dnscrypt-proxy/src/libevent/.libs/libevent.a
 
-dnscrypt-proxy/autogen.sh:
-	@git submodule update --init
-
-dnscrypt-proxy/src/libnacl/build/localhost/lib/local/libnacl.a dnscrypt-proxy/src/libevent/.libs/libevent.a: dnscrypt-proxy/autogen.sh
+dnscrypt-proxy/src/libnacl/build/localhost/lib/local/libnacl.a dnscrypt-proxy/src/libevent/.libs/libevent.a:
 	@cd dnscrypt-proxy && ./autogen.sh && ./configure && make
 
 $(LIB_OBJS): $(LIB_H)

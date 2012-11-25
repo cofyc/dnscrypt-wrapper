@@ -1,7 +1,7 @@
 #!/bin/sh
 # Generate version automatically.
 
-version=$(git describe --always --match "v[0-9]*" | sed -e 's/-/./g' | sed -e 's/^v//g')
+version=$(git describe --always --match "v[0-9]*" HEAD | sed -e 's/-/./g' | sed -e 's/^v//g')
 version_file=version.h
 
 if test -f "$version_file"; then
