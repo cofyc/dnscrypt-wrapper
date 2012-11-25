@@ -1,18 +1,20 @@
+# dnscrypt-wrapper Makefile
+#
 # The default target
 all:: 
 
 CC = cc
 RM = rm -rf
-
-uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
-
-CFLAGS = -O2 -std=c99 -pedantic -Wall -Idnscrypt-proxy/src/libevent/include -Idnscrypt-proxy/src/libnacl/build/localhost/include/local
-LDFLAGS = -lm
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 
+uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+
+FINAL_CFLAGS = $(CFLAGS) -O2 -std=c99 -pedantic -Wall -Idnscrypt-proxy/src/libevent/include -Idnscrypt-proxy/src/libnacl/build/localhost/include/local
+FINAL_LDFLAGS = $(LDFLAGS) -lm
+
 ifeq ($(uname_S),Linux)
-	LDFLAGS += -lrt
+	FINAL_LDFLAGS += -lrt
 endif
 
 LIB_H = dnscrypt.h udp_request.h edns.h logger.h dnscrypt-proxy/src/libevent/include/event2/event.h
@@ -44,10 +46,13 @@ $(LIB_OBJS): $(LIB_H)
 
 all:: dnscrypt-wrapper
 
+%.o: %.c
+	$(CC) $(FINAL_CFLAGS) -c $<
+
 main.o: version.h
 
 dnscrypt-wrapper: $(LIB_OBJS) $(LDADD)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(FINAL_CFLAGS) -o $@ $^ $(FINAL_LDFLAGS)
 
 install: all
 	install -p -m 755 dnscrypt-wrapper $(BINDIR)
