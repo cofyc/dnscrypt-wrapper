@@ -5,8 +5,11 @@ CC = cc
 RM = rm -rf
 
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+VERSION: FORCE
+	@./gen-version.sh
+-include VERSION
 
-CFLAGS = -O2 -std=c99 -pedantic -Wall -Idnscrypt-proxy/src/libevent/include -Idnscrypt-proxy/src/libnacl/build/localhost/include/local
+CFLAGS = -O2 -std=c99 -pedantic -Wall -Idnscrypt-proxy/src/libevent/include -Idnscrypt-proxy/src/libnacl/build/localhost/include/local -DTHE_VERSION='"$(THE_VERSION)"'
 LDFLAGS = -lm
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
@@ -31,9 +34,6 @@ LIB_OBJS += cert.o
 LDADD += argparse/argparse.o
 LDADD += dnscrypt-proxy/src/libnacl/build/localhost/lib/local/libnacl.a
 LDADD += dnscrypt-proxy/src/libevent/.libs/libevent.a
-
-version.h: FORCE
-	@./gen-version.sh version.h
 
 argparse/argparse.o: argparse/argparse.h
 	@make -C argparse argparse.o
@@ -61,8 +61,16 @@ uninstall:
 clean:
 	$(RM) dnscrypt-wrapper
 	$(RM) $(LIB_OBJS)
+	$(RM) VERSION
 
-clean-all: clean
-	cd dnscrypt-proxy; make clean
+dist: dnscrypt-wrapper-$(THE_VERSION).tar
+dist-clean:
+	$(RM) dnscrypt-wrapper*
 
-.PHONY: all install uninstall clean test FORCE
+dnscrypt-wrapper-$(THE_VERSION).tar:
+	git archive --format=tar -o $@ --prefix=dnscrypt-wrapper-$(THE_VERSION)/ v$(THE_VERSION)
+	mkdir -p dnscrypt-wrapper-$(THE_VERSION)/
+	cp VERSION dnscrypt-wrapper-$(THE_VERSION)/VERSION
+	tar --append -f $@ dnscrypt-wrapper-$(THE_VERSION)/VERSION
+
+.PHONY: all install uninstall clean test FORCE dist
