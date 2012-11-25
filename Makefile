@@ -41,7 +41,7 @@ argparse/argparse.o: argparse/argparse.h
 dnscrypt-proxy/src/libevent/include/event2/event.h: dnscrypt-proxy/src/libevent/.libs/libevent.a
 
 dnscrypt-proxy/src/libnacl/build/localhost/lib/local/libnacl.a dnscrypt-proxy/src/libevent/.libs/libevent.a:
-	@cd dnscrypt-proxy && ./autogen.sh && ./configure && make
+	@cd dnscrypt-proxy && ./autogen.sh && ./configure && cd src/libevent && make && cd ../libnacl && make
 
 $(LIB_OBJS): $(LIB_H)
 
