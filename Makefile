@@ -6,14 +6,13 @@ RM = rm -rf
 
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
-EXTRA_CFLAGS = # dynamically added/remoted
-CFLAGS = -O2 -std=c99 -pedantic -Wall $(EXTRA_CFLAGS) -Idnscrypt-proxy/src/libevent/include -Idnscrypt-proxy/src/libnacl/build/localhost/include/local
+CFLAGS = -O2 -std=c99 -pedantic -Wall -Idnscrypt-proxy/src/libevent/include -Idnscrypt-proxy/src/libnacl/build/localhost/include/local
 LDFLAGS = -lm
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 
 ifeq ($(uname_S),Linux)
-	EXTRA_CFLAGS += -lrt
+	LDFLAGS += -lrt
 endif
 
 LIB_H = dnscrypt.h udp_request.h edns.h logger.h dnscrypt-proxy/src/libevent/include/event2/event.h
@@ -57,7 +56,7 @@ all:: dnscrypt-wrapper
 main.o: version.h
 
 dnscrypt-wrapper: $(LIB_OBJS) $(LDADD)
-	$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 install: all
 	install -p -m 755 dnscrypt-wrapper $(BINDIR)
