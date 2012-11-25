@@ -1,0 +1,25 @@
+-------------------------------------------------------------------
+Tue Oct 23 16:58:22 UTC 2012 - i@marguerite.su
+
+- fix a hang bug in dnscrypt.service
+- upstream clarify license, it's BSD.
+
+-------------------------------------------------------------------
+Sun Oct 21 18:28:26 UTC 2012 - i@marguerite.su
+
+- add systemd service.
+
+-------------------------------------------------------------------
+Sun Oct 21 12:57:13 UTC 2012 - i@marguerite.su
+
+- Version 1.2.0:
+  * A pre-filter can now totally bypass the resolver and directly send a
+   reply to the client.
+  * A new example plugin has been shipped: ldns-aaaa-blocking. It
+   directly sends an empty response to AAAA queries in order to
+   significantly speed up lookups on hosts without IPv6 connectivity
+   (but with clients still asking for AAAA records anyway).
+  * Example plugins requiring ldns can be compiled on Windows.
+  * Paths with a drive name are now recognized as absolute paths on
+   Windows.
+

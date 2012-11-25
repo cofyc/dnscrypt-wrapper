@@ -1,0 +1,8 @@
+@comment $NetBSD$
+bin/hostip
+sbin/dnscrypt-proxy
+man/man8/dnscrypt-proxy.8
+man/man8/hostip.8
+share/doc/dnscrypt-proxy/README.markdown
+share/examples/rc.d/dnscrypt_proxy
+

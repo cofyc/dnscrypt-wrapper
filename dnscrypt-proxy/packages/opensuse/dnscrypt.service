@@ -1,0 +1,27 @@
+# This file is part of dnscrypt
+# Author: Marguerite Su <i@marguerite.su> with some AUR reference.
+# Version: 1.2.0
+# Description: dnscrypt is a tool that encrypts your DNS queries in order to
+#              protect against man-in-the-middle attacks and DNS hijacking
+#              (commonly seen in China). It uses OpenDNS resolvers by default.
+#              It is BSD-licensed.
+#              In openSUSE it's licensed under SuSE-Permissive (non-free ware).
+#              For details, refer to its documentation.
+[Unit]
+Description=Secure connection between your computer and a DNS resolver
+After=network.target ntp.service
+# Ntp always has local servers, and there's nothing to encrypt for time.
+# and ntp.service isn't native systemd service, if we start before it,
+# it will take a long time to sync. just save 20000+ms on boot.
+
+[Service]
+Type=forking
+PIDFile=/var/run/dnscrypt-proxy.pid
+ExecStart=/usr/sbin/dnscrypt-proxy --daemonize \
+          -p /var/run/dnscrypt-proxy.pid \
+          -l /var/log/dnscrypt-proxy.log 
+# Automatically Restart 
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

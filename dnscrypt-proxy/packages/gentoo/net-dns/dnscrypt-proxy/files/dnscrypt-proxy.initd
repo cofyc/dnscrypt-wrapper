@@ -1,0 +1,37 @@
+#!/sbin/runscript
+
+DNSCRYPT_LOGFILE=${DNSCRYPT_LOGFILE:-/var/log/dnscrypt-proxy.log}
+
+rundir=${rundir:-/var/run/dnscrypt-proxy}
+pidfile=${pidfile:-${rundir}/dnscrypt-proxy.pid}
+rundir=${rundir:-/var/run/dnscrypt-proxy}
+runas_user=${runas_user:-dnscrypt}
+runas_group=${runas_user:-dnscrypt}
+
+depend() {
+	use net
+	before dns
+	after logger
+}
+
+start() {
+
+        if [ ! -d "${rundir}" ]; then
+                mkdir "${rundir}"
+                if [ -n "${runas_user}" ]; then
+			touch  ${DNSCRYPT_LOGFILE}
+			chown ${runas_user}:${runas_group} ${DNSCRYPT_LOGFILE}
+                        chown -R ${runas_user}:${runas_group} "${rundir}"
+                fi
+        fi
+
+	ebegin "Starting dnscrypt-proxy"
+	start-stop-daemon --start --quiet --pidfile=${pidfile} --exec /usr/sbin/dnscrypt-proxy -- -p ${pidfile} -l ${DNSCRYPT_LOGFILE} -d -u ${runas_group} -a ${DNSCRYPT_LOCALIP} -P ${DNSCRYPT_LOCALPORT}
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping dnscrypt-proxy"
+	start-stop-daemon --stop --quiet --exec /usr/sbin/dnscrypt-proxy
+	eend $?
+}
