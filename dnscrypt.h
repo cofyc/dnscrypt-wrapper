@@ -113,6 +113,7 @@ struct context {
 
      /* Process stuff. */
      bool daemonize;
+     char *pidfile;
      char *user;
      uid_t user_id;
      gid_t user_group;

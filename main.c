@@ -1,6 +1,7 @@
 #include "dnscrypt.h"
 #include "argparse/argparse.h"
 #include "version.h"
+#include "pidfile.h"
 /**
  * This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to add
  * dnscrypt support to any name resolver.
@@ -197,6 +198,7 @@ main(int argc, const char **argv)
         OPT_STRING('r', "resolver-address", &c.resolver_address, "upstream dns resolver server (<address:port>)"),
         OPT_STRING('u', "user", &c.user, "run as given user"),
         OPT_BOOLEAN('d', "daemonize", &c.daemonize, "run as daemon (default: off)"),
+        OPT_STRING('p', "pidfile", &c.pidfile, "pid stored file"),
         OPT_BOOLEAN('V', "verbose", &verbose, "show verbose logs (specify more -VVV to increase verbosity)"),
         OPT_STRING('l', "logfile", &c.logfile, "log file path (default: stdout)"),
         OPT_BOOLEAN(0, "gen-provider-keypair", &gen_provider_keypair, "generate provider key pair"),
@@ -344,6 +346,9 @@ main(int argc, const char **argv)
 
     if (c.daemonize) {
         do_daemonize();
+    }
+    if (c.pidfile) {
+        pidfile_create(c.pidfile);
     }
 
     if (sockaddr_from_ip_and_port(&c.resolver_sockaddr,
