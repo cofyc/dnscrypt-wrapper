@@ -17,6 +17,11 @@ INSTALLATION
     $ git clone git://github.com/Cofyc/dnscrypt-wrapper.git
     $ make
     $ make install
+
+Gentoo ebuild
+-------------
+
+See https://github.com/Cofyc/portage-overlay/tree/master/net-misc/dnscrypt-wrapper.
     
 Usage
 =====
