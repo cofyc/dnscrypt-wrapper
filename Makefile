@@ -41,13 +41,13 @@ argparse/argparse.o: argparse/argparse.h
 dnscrypt-proxy/src/libevent/include/event2/event.h: dnscrypt-proxy/src/libevent/.libs/libevent.a
 dnscrypt-proxy/src/libnacl/build/localhost/include/local/crypto_box.h: dnscrypt-proxy/src/libnacl/build/localhost/lib/local/libnacl.a
 
-dnscrypt-proxy/src/libnacl/Makefile dnscrypt-proxy/src/libevent/Makefile: 
+dnscrypt-proxy/configure:
 	cd dnscrypt-proxy && ./autogen.sh && ./configure
 
-dnscrypt-proxy/src/libnacl/build/localhost/lib/local/libnacl.a: dnscrypt-proxy/src/libnacl/Makefile
+dnscrypt-proxy/src/libnacl/build/localhost/lib/local/libnacl.a: dnscrypt-proxy/configure
 	make -C dnscrypt-proxy/src/libnacl
 
-dnscrypt-proxy/src/libevent/.libs/libevent.a: dnscrypt-proxy/src/libevent/Makefile
+dnscrypt-proxy/src/libevent/.libs/libevent.a: dnscrypt-proxy/configure
 	make -C dnscrypt-proxy/src/libevent
 
 $(LIB_OBJS): $(LIB_H)
