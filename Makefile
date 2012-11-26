@@ -45,10 +45,10 @@ dnscrypt-proxy/src/libnacl/Makefile dnscrypt-proxy/src/libevent/Makefile:
 	cd dnscrypt-proxy && ./autogen.sh && ./configure
 
 dnscrypt-proxy/src/libnacl/build/localhost/lib/local/libnacl.a: dnscrypt-proxy/src/libnacl/Makefile
-	make -C dnscrypt-proxy/src/libevent
+	make -C dnscrypt-proxy/src/libnacl
 
 dnscrypt-proxy/src/libevent/.libs/libevent.a: dnscrypt-proxy/src/libevent/Makefile
-	make -C dnscrypt-proxy/src/libnacl
+	make -C dnscrypt-proxy/src/libevent
 
 $(LIB_OBJS): $(LIB_H)
 
