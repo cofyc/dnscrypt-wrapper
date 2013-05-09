@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Dnscrypt-wrapper by Cofyc</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Dnscrypt-wrapper</h1>
+        <p>This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to add dnscrypt support to any name resolver.</p>
+
+        <p class="view"><a href="https://github.com/Cofyc/dnscrypt-wrapper">View the Project on GitHub <small>Cofyc/dnscrypt-wrapper</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/Cofyc/dnscrypt-wrapper/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/Cofyc/dnscrypt-wrapper/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/Cofyc/dnscrypt-wrapper">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>NAME</h1>
+
+<p>dnscrypt-wrapper - A server-side dnscrypt proxy.</p>
+
+<h1>DESCRIPTION</h1>
+
+<p>This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to add dnscrypt support to any name resolver.</p>
+
+<p>This software is modified from
+<a href="https://github.com/opendns/dnscrypt-proxy">dnscrypt-proxy</a>.</p>
+
+<h1>INSTALLATION</h1>
+
+<pre><code>$ git clone git://github.com/Cofyc/dnscrypt-wrapper.git
+$ make
+$ make install
+</code></pre>
+
+<h2>Gentoo ebuild</h2>
+
+<p>See <a href="https://github.com/Cofyc/portage-overlay/tree/master/net-misc/dnscrypt-wrapper">https://github.com/Cofyc/portage-overlay/tree/master/net-misc/dnscrypt-wrapper</a>.</p>
+
+<h1>Usage</h1>
+
+<p>First, generate provider keypair:</p>
+
+<pre><code># stored in public.key/secret.key in current directory
+$ ./dnscrypt-wrapper --gen-provider-keypair
+</code></pre>
+
+<p>Second, generate crypt keypair:</p>
+
+<pre><code># stored in crypt_public.key/crypt_secret.key in current directory
+$ ./dnscrypt-wrapper --gen-crypt-keypair
+</code></pre>
+
+<p>Third, generate pre-signed certificate (use pre-generated key pairs):</p>
+
+<pre><code># stored in dnscrypt.cert in current directory
+$ ./dnscrypt-wrapper --crypt-secretkey-file misc/crypt_secret.key --crypt-publickey-file=misc/crypt_public.key --provider-publickey-file=misc/public.key --provider-secretkey-file=misc/secret.key --gen-cert-file
+</code></pre>
+
+<p>Run the program with pre-signed certificate:</p>
+
+<pre><code>$ ./dnscrypt-wrapper  -r 8.8.8.8:53 -a 0.0.0.0:54  --crypt-secretkey-file=misc/crypt_secret.key --crypt-publickey-file=misc/crypt_public.key --provider-cert-file=misc/dnscrypt.cert --provider-name=2.dnscrypt-cert.yechengfu.com -VV
+</code></pre>
+
+<p>If you can store genearted pre-signed certificate (binary string) in TXT record for your provider name, for example: 2.dnscrypt-cert.yourdomain.com. Then you can omit <code>--provider-cert-file</code> and <code>--provider-name</code> options. Name server will serve this binary certificate data for you.</p>
+
+<p>P.S. We still provide <code>--provider-cert-file</code> option, because it's not convenient to store such long binary data in many dns manager (e.g. linode.com). But it's easy to configure it in your own dns servers (such as tinydns, etc). <code>--gen-cert-file</code> will generate example record in stdout.</p>
+
+<p>Run dnscrypt-proxy to test againt it:</p>
+
+<pre><code># --provider-key is public key fingerprint in first step.
+$ ./dnscrypt-proxy -a 127.0.0.1:55 --provider-name=2.dnscrypt-cert.yechengfu.com -r 127.0.0.1:54 --provider-key=4298:5F65:C295:DFAE:2BFB:20AD:5C47:F565:78EB:2404:EF83:198C:85DB:68F1:3E33:E952
+$ dig -p 55 google.com @127.0.0.1
+</code></pre>
+
+<p>Optional, add "-d/--daemonize" flag to run as daemon.</p>
+
+<p>Run "./dnscrypt-wrapper -h" to view command line options.</p>
+
+<h1>See also</h1>
+
+<ul>
+<li><a href="http://dnscrypt.org/">http://dnscrypt.org/</a></li>
+<li><a href="http://www.opendns.com/technology/dnscrypt/">http://www.opendns.com/technology/dnscrypt/</a></li>
+</ul>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/Cofyc">Cofyc</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
