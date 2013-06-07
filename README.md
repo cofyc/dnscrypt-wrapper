@@ -17,6 +17,10 @@ This software is modified from
 Installation
 ============
 
+Install [libsodium](https://github.com/jedisct1/libsodium).
+On Linux, don't forget to run `ldconfig` if you installed it from
+source.
+
     $ git clone --recursive git://github.com/jedisct1/dnscrypt-wrapper.git
     $ make
     $ make install
