@@ -180,23 +180,6 @@ sendto_with_retry(SendtoWithRetryCtx * const ctx)
 }
 
 static void
-proxy_client_send_truncated(UDPRequest * const udp_request,
-                            uint8_t dns_reply[DNS_MAX_PACKET_SIZE_UDP],
-                            size_t dns_reply_len)
-{
-    assert(dns_reply_len > DNS_OFFSET_FLAGS2);
-    dns_reply[DNS_OFFSET_FLAGS] |= DNS_FLAGS_TC | DNS_FLAGS_QR;
-    dns_reply[DNS_OFFSET_FLAGS2] |= DNS_FLAGS2_RA;
-    sendto_with_retry(&(SendtoWithRetryCtx) {
-                      .udp_request = udp_request,.handle =
-                      udp_request->client_proxy_handle,.buffer =
-                      dns_reply,.length = dns_reply_len,.flags = 0,.dest_addr =
-                      (struct sockaddr *)&udp_request->
-                      client_sockaddr,.dest_len =
-                      udp_request->client_sockaddr_len,.cb = udp_request_kill});
-}
-
-static void
 timeout_timer_cb(evutil_socket_t timeout_timer_handle, short ev_flags,
                  void * const udp_request_)
 {

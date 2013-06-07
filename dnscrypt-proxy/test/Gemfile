@@ -1,4 +1,0 @@
-source 'http://rubygems.org'
-gem 'aruba'
-gem 'cucumber'
-gem 'net-dns'
