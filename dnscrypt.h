@@ -7,10 +7,7 @@
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
 #include <event2/util.h>
-#include <crypto_box.h>
-#include <crypto_stream.h>
-#include <crypto_sign_ed25519.h>
-#include <randombytes.h>
+#include <sodium.h>
 
 #define DNS_QUERY_TIMEOUT 10
 
@@ -67,7 +64,7 @@
 #ifndef DNSCRYPT_MIN_PAD_LEN
 # define DNSCRYPT_MIN_PAD_LEN 8U
 #endif
-#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
+
 #define crypto_box_HALF_NONCEBYTES (crypto_box_NONCEBYTES / 2U)
 
 #define DEFAULT_PROVIDER_NAME "2.cert.dnscrypt.org"
@@ -77,7 +74,6 @@
 #include "tcp_request.h"
 #include "rfc1035.h"
 #include "logger.h"
-#include "salsa20_random.h"
 #include "safe_rw.h"
 #include "cert.h"
 

@@ -1,6 +1,0 @@
-.
-./features
-./features/step_definitions
-./features/support
-./features/test-dnscrypt-proxy
-./features/test-hostip

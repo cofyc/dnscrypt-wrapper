@@ -1,20 +1,23 @@
-NAME
+Name
 ====
 
 dnscrypt-wrapper - A server-side dnscrypt proxy.
 
-DESCRIPTION
+(c) 2012-2013 Yecheng Fu <cofyc.jackson at gmail dot com>
+
+Description
 ===========
 
-This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to add dnscrypt support to any name resolver.
+This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to
+add dnscrypt support to any name resolver.
 
 This software is modified from
-[dnscrypt-proxy](https://github.com/opendns/dnscrypt-proxy).
+[dnscrypt-proxy](https://github.com/jedisct1/dnscrypt-proxy).
 
-INSTALLATION
+Installation
 ============
 
-    $ git clone git://github.com/Cofyc/dnscrypt-wrapper.git
+    $ git clone --recursive git://github.com/jedisct1/dnscrypt-wrapper.git
     $ make
     $ make install
 
