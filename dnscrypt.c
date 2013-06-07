@@ -16,24 +16,6 @@ dnscrypt_cmp_client_nonce(const uint8_t
     return 0;
 }
 
-void
-randombytes(unsigned char * const buf, const unsigned long long buf_len)
-{
-    assert(buf_len <= SIZE_MAX);
-    salsa20_random_buf(buf, buf_len);
-}
-
-void
-dnscrypt_memzero(void * const pnt, const size_t size)
-{
-        volatile unsigned char *pnt_ = (volatile unsigned char *) pnt;
-            size_t                     i = (size_t) 0U;
-
-                while (i < size) {
-                            pnt_[i++] = 0U;
-                                }
-}
-
 uint64_t
 dnscrypt_hrtime(void)
 {
@@ -239,12 +221,12 @@ add_server_nonce(struct context *c, uint8_t *nonce)
         ts = c->nonce_ts_last + 1;
     }
     c->nonce_ts_last = ts;
-    tsn = (ts << 10) | (salsa20_random() & 0x3ff);
+    tsn = (ts << 10) | (randombytes_random() & 0x3ff);
 #if (BYTE_ORDER == LITTLE_ENDIAN)
     tsn = (((uint64_t)htonl((uint32_t)tsn)) << 32) | htonl((uint32_t)(tsn >> 32));
 #endif
     memcpy(nonce + crypto_box_HALF_NONCEBYTES, &tsn, 8);
-    suffix = salsa20_random();
+    suffix = randombytes_random();
     memcpy(nonce + crypto_box_HALF_NONCEBYTES + 8, &suffix, 4);
 }
 

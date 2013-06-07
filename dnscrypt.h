@@ -74,7 +74,6 @@
 #include "tcp_request.h"
 #include "rfc1035.h"
 #include "logger.h"
-#include "salsa20_random.h"
 #include "safe_rw.h"
 #include "cert.h"
 
