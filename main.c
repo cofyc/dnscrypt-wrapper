@@ -268,7 +268,7 @@ main(int argc, const char **argv)
 
     // crypt public & secret key
     if (!c.crypt_publickey_file || !c.crypt_secretkey_file) {
-        logger(LOG_ERR, "You must provide --crypt-secretkey-file and --crypt-secretkey-file.");
+        logger(LOG_ERR, "You must provide --crypt-publickey-file and --crypt-secretkey-file.");
         exit(1);
     }
     if (read_from_file(c.crypt_publickey_file, (char *)c.crypt_publickey, crypto_box_PUBLICKEYBYTES) != 0 ||
