@@ -38,11 +38,14 @@ argparse/argparse.o: argparse/argparse.h
 
 dnscrypt-proxy/src/libevent-modified/include/event2/event.h: dnscrypt-proxy/src/libevent-modified/.libs/libevent.a
 
-dnscrypt-proxy/configure:
+dnscrypt-proxy/configure: dnscrypt-proxy/autogen.sh
 	cd dnscrypt-proxy && ./autogen.sh && ./configure
 
 dnscrypt-proxy/src/libevent-modified/.libs/libevent.a: dnscrypt-proxy/configure
 	make -C dnscrypt-proxy/src/libevent-modified
+
+dnscrypt-proxy/autogen.sh:
+	git submodule update --init dnscrypt-proxy
 
 $(LIB_OBJS): $(LIB_H)
 

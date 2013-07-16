@@ -1,0 +1,15 @@
+language: c
+compiler:
+ - clang
+ - gcc
+before_script:
+ - git clone git://github.com/jedisct1/libsodium.git
+ - cd libsodium
+ - git checkout 0.4.1
+ - ./autogen.sh
+ - ./configure --disable-dependency-tracking
+ - sudo make install
+ - sudo ldconfig
+ - cd ..
+script:
+ - make
