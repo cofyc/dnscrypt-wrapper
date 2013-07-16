@@ -33,7 +33,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <pwd.h>
-#include <uuid/uuid.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
