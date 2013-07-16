@@ -5,6 +5,8 @@ dnscrypt-wrapper - A server-side dnscrypt proxy.
 
 (c) 2012-2013 Yecheng Fu <cofyc.jackson at gmail dot com>
 
+[![Build Status](https://travis-ci.org/Cofyc/dnscrypt-wrapper.png?branch=master)](https://travis-ci.org/Cofyc/dnscrypt-wrapper)
+
 [中文](README.cn.md)
 
 Description
