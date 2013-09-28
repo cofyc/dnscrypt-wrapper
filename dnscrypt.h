@@ -176,6 +176,23 @@ print_binary_string_hex(uint8_t *s, size_t count)
     printf("\n");
 }
 
+static inline void
+_theAssert(char *estr, char *file, int line)
+{
+    logger(LOG_DEBUG, "=== ASSERTION FAILED ===");
+    logger(LOG_DEBUG, "==> %s:%d '%s' is not true", file, line, estr);
+}
+
+static inline void
+_theAssertPrintBinaryString(uint8_t *s, size_t count, char *estr, char *file, int line)
+{
+    _theAssert(estr, file, line);
+    print_binary_string_hex(s, count);
+}
+
+#define theAssert(_e) ((_e)?(void)0 : (_theAssert(#_e,__FILE__,__LINE__),_exit(1)))
+#define theAssertPrintBinaryString(_s,_c,_e) ((_e)?(void)0 : (_theAssertPrintBinaryString(_s,_c,#_e,__FILE__,__LINE__),_exit(1)))
+
 struct dnscrypt_query_header {
     uint8_t magic_query[DNSCRYPT_MAGIC_HEADER_LEN];
     uint8_t publickey[crypto_box_PUBLICKEYBYTES];
