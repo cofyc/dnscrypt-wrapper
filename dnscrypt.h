@@ -137,6 +137,7 @@ uint64_t dnscrypt_hrtime(void);
 void dnscrypt_key_to_fingerprint(char fingerprint[80U], const uint8_t * const key);
 int dnscrypt_fingerprint_to_key(const char * const fingerprint, uint8_t key[crypto_box_PUBLICKEYBYTES]);
 
+// vim-like binary display
 static inline void
 print_binary_string(uint8_t *s, size_t count)
 {
@@ -151,6 +152,23 @@ print_binary_string(uint8_t *s, size_t count)
         } else {
             printf("\\%03d", x);
         }
+        if (i % 16 == 0) {
+            printf("\n");
+        }
+    }
+    printf("\n");
+}
+
+// binary in hex
+static inline void
+print_binary_string_hex(uint8_t *s, size_t count)
+{
+    for (size_t i = 1; i <= count; i++) {
+        if ((i - 1) % 16 == 0) {
+            printf("%04zx: ", (i - 1));
+        }
+        uint8_t x = *((uint8_t *)s + i - 1);
+        printf("%02x ", x);
         if (i % 16 == 0) {
             printf("\n");
         }

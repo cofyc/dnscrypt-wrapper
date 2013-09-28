@@ -1,9 +1,80 @@
-DNS Protocol
-============
+# DNS Protocol
+
 - http://tools.ietf.org/html/rfc1035
 - http://www.ccs.neu.edu/home/amislove/teaching/cs4700/fall09/handouts/project1-primer.pdf
 
-DNSCrypt
-========
+# DNSCrypt
 
 See http://dnscrypt.org/.
+
+
+# DNS query & reply examples
+
+## Query
+
+  0000: a1 30 01 00 00 01 00 00 00 00 00 00 09 79 65 63 
+  0010: 68 65 6e 67 66 75 03 63 6f 6d 00 00 01 00 01
+
+Header: 
+
+  ID:  a1 30
+
+  QR:   0   (1 bit, specifies whether this message is query (0) or response (1))
+  OPCODE: 0 (4 bits, specifies kind of query in this message, 0 meas standard
+  AA: 0     (1 bit, Authoritative Answer - this bit is only meaningful in responses, and speciﬁes that the responding name server is an authority for the domain name in question section)
+  TC: 0     (1 bit, TrunCation - speciﬁes that this message was truncated)
+  RD: 1     (1 bit, Recursion Desired - this bit directs the name server to pursue the query recursively)
+  RA: 0     (1 bit, Recursion Available - this be is set or cleared in a response, and denotes whether recursive query support is available in the name server. Recursive query support is optional.)
+  Z: 0000   (3 bits, Reserved for future use)
+  RCODE: 0000 (4 bits, Response code)
+
+  QDCOUNT: 1 (16 bits, the number of entries in the question section)
+  ANCOUNT: 0 (16 bits, the number of resource records in the answer section)
+  NSCOUNT: 0 (16 bits, the number of name server resource records in the authority records section)
+  ARCOUNT: 0 (16 bits, the number of resource records in the additional records section)
+
+Questions:
+
+  QNAME: 9 + yechengfu + 3 + com + 0 (End of this name)
+  QTYPE: A two octet code which speciﬁes the type of the query. (1 means A record)
+  QCLASS: A two octet code that speciﬁes the class of the query. (1 means Internet Address)
+
+## Reply
+
+  0000: a1 30 81 80 00 01 00 01 00 00 00 00 09 79 65 63 
+  0010: 68 65 6e 67 66 75 03 63 6f 6d 00 00 01 00 01 c0 
+  0020: 0c 00 01 00 01 00 00 27 60 00 04 6a bb 22 2d
+
+Header:
+
+  ID: a1 30
+
+  QR: 1 (1 bit)
+  OPCODE: 0 (4 bits)
+  AA: 0 (1 bit)
+  TC: 0  (1 bit)
+  RD: 1 (1 bit)
+  RA: 1 (1 bit)
+  Z:  0 (3 bits)
+  RCODE: 0 (4 bits)
+
+  QDCOUNT: 0x0001
+  ANCOUNT: 0x0001
+  NSCOUNT: 0x0000
+  ARCOUNT: 0x0000
+
+Questions:
+ 
+  QNAME: 9 + yechengfu + 3 + com + 0 (NULL)
+  QTYPE: 0x0001
+  QCLASS: 0x0001
+
+Answers:
+  
+  0xc: Name is a pointer
+  0x00c: Pointer is to the name at offset 0x00c
+  0x0001: Answer is a Type A query (host address)
+  0x0001: Answer is class IN (Internet address)
+  0x00002760: Address is valid for 10080 seconds
+  0x0004: Address is 4 bytes long
+  0x6abb222d: IP Address is 106.187.34.45

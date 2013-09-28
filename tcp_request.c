@@ -227,7 +227,7 @@ resolver_proxy_read_cb(struct bufferevent * const proxy_resolver_bev,
     assert(tcp_request->status.has_dns_reply_len != 0);
     dns_reply_len = tcp_request->dns_reply_len;
     if (dns_reply_len <
-        (size_t) DNS_HEADER_SIZE + DNSCRYPT_RESPONSE_HEADER_SIZE) {
+        (size_t) DNS_HEADER_SIZE) {
         logger(LOG_WARNING, "Short reply received");
         tcp_request_kill(tcp_request);
         return;
@@ -275,7 +275,7 @@ tcp_connection_cb(struct evconnlistener * const tcp_conn_listener,
                   const int client_sockaddr_len_int,
                   void * const context)
 {
-    logger(LOG_DEBUG, "Accepted a connection.");
+    logger(LOG_DEBUG, "Accepted a tcp connection.");
     struct context *c = context;
     TCPRequest   *tcp_request;
 
