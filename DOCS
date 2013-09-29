@@ -3,6 +3,8 @@
 - http://tools.ietf.org/html/rfc1035
 - http://www.ccs.neu.edu/home/amislove/teaching/cs4700/fall09/handouts/project1-primer.pdf
 
+In tcp protocol, first 2 bytes contains length of dns query.
+
 # DNSCrypt
 
 See http://dnscrypt.org/.

@@ -17,7 +17,7 @@ ifeq ($(uname_S),Linux)
 	FINAL_LDFLAGS += -lrt
 endif
 
-LIB_H = dnscrypt.h udp_request.h edns.h logger.h dnscrypt-proxy/src/libevent-modified/include/event2/event.h 
+LIB_H = dnscrypt.h udp_request.h edns.h logger.h dnscrypt-proxy/src/libevent-modified/include/event2/event.h
 
 LIB_OBJS += dnscrypt.o
 LIB_OBJS += udp_request.o
@@ -30,11 +30,14 @@ LIB_OBJS += safe_rw.o
 LIB_OBJS += cert.o
 LIB_OBJS += pidfile.o
 
-LDADD += argparse/argparse.o
+LDADD += argparse/libargparse.a
 LDADD += dnscrypt-proxy/src/libevent-modified/.libs/libevent.a
 
-argparse/argparse.o: argparse/argparse.h
-	@make -C argparse argparse.o
+argparse/libargparse.a: argparse/argparse.h
+	@make -C argparse libargparse.a
+
+argparse/argparse.h:
+	git submodule update --init argparse
 
 dnscrypt-proxy/src/libevent-modified/include/event2/event.h: dnscrypt-proxy/src/libevent-modified/.libs/libevent.a
 
