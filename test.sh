@@ -32,3 +32,9 @@ for i in $(seq 1 32); do
     dig +short -p $port yechengfu.com.com @$server +tcp
     ) &
 done
+
+for i in $(seq 1 32); do
+    (
+    for ((a=1; a <= 2048; a++)); do dig -p 54 @127.0.0.1 yahoo.com +tcp +dnssec +edns=0 +cdflag; done
+    ) &
+done
