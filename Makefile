@@ -17,7 +17,7 @@ ifeq ($(uname_S),Linux)
 	FINAL_LDFLAGS += -lrt
 endif
 
-LIB_H = dnscrypt.h udp_request.h edns.h logger.h 
+LIB_H = dnscrypt.h udp_request.h edns.h logger.h argparse/argparse.h
 
 LIB_OBJS += dnscrypt.o
 LIB_OBJS += udp_request.o
