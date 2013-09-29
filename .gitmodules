@@ -1,6 +1,3 @@
-[submodule "dnscrypt-proxy"]
-	path = dnscrypt-proxy
-	url = https://github.com/jedisct1/dnscrypt-proxy
 [submodule "argparse"]
 	path = argparse
 	url = https://github.com/Cofyc/argparse
