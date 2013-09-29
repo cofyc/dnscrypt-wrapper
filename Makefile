@@ -10,14 +10,14 @@ BINDIR = $(PREFIX)/bin
 
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
-FINAL_CFLAGS = $(CFLAGS) -O2 -std=c99 -pedantic -Wall -Idnscrypt-proxy/src/libevent-modified/include
-FINAL_LDFLAGS = $(LDFLAGS) -lm -lsodium
+FINAL_CFLAGS = $(CFLAGS) -O2 -std=c99 -pedantic -Wall
+FINAL_LDFLAGS = $(LDFLAGS) -lm -lsodium -levent
 
 ifeq ($(uname_S),Linux)
 	FINAL_LDFLAGS += -lrt
 endif
 
-LIB_H = dnscrypt.h udp_request.h edns.h logger.h dnscrypt-proxy/src/libevent-modified/include/event2/event.h
+LIB_H = dnscrypt.h udp_request.h edns.h logger.h 
 
 LIB_OBJS += dnscrypt.o
 LIB_OBJS += udp_request.o
@@ -31,24 +31,12 @@ LIB_OBJS += cert.o
 LIB_OBJS += pidfile.o
 
 LDADD += argparse/libargparse.a
-LDADD += dnscrypt-proxy/src/libevent-modified/.libs/libevent.a
 
 argparse/libargparse.a: argparse/argparse.h
 	@make -C argparse libargparse.a
 
 argparse/argparse.h:
 	git submodule update --init argparse
-
-dnscrypt-proxy/src/libevent-modified/include/event2/event.h: dnscrypt-proxy/src/libevent-modified/.libs/libevent.a
-
-dnscrypt-proxy/configure: dnscrypt-proxy/autogen.sh
-	cd dnscrypt-proxy && ./autogen.sh && ./configure
-
-dnscrypt-proxy/src/libevent-modified/.libs/libevent.a: dnscrypt-proxy/configure
-	make -C dnscrypt-proxy/src/libevent-modified
-
-dnscrypt-proxy/autogen.sh:
-	git submodule update --init dnscrypt-proxy
 
 $(LIB_OBJS): $(LIB_H)
 

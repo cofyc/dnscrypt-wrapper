@@ -200,7 +200,7 @@ self_serve_cert_file(struct context *c, struct dns_header *header, size_t dns_qu
     unsigned char *p;
     unsigned char *ansp;
     int q;
-    int qtype, qclass;
+    int qtype;
     unsigned int nameoffset;
     p = (unsigned char *)(header + 1);
     int anscount = 0;
@@ -216,7 +216,6 @@ self_serve_cert_file(struct context *c, struct dns_header *header, size_t dns_qu
             return -1;
         }
         GETSHORT(qtype, p);
-        GETSHORT(qclass, p);
         if (qtype == T_TXT && strcasecmp(c->provider_name, c->namebuff) == 0) {
             // reply with signed certificate
             size_t size = 1 + sizeof(struct SignedCert);
