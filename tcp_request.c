@@ -208,12 +208,13 @@ resolver_proxy_read_cb(struct bufferevent * const proxy_resolver_bev,
                        void * const tcp_request_)
 {
     uint8_t          dns_reply_len_buf[2];
-    uint8_t          dns_uncurved_reply_len_buf[2];
-    uint8_t         *dns_reply;
+    uint8_t          dns_curved_reply_len_buf[2];
+    uint8_t         *dns_reply_bev;
     TCPRequest      *tcp_request = tcp_request_;
     struct context    *c = tcp_request->context;
     struct evbuffer *input = bufferevent_get_input(proxy_resolver_bev);
     size_t           available_size;
+    uint8_t          dns_reply[DNS_MAX_PACKET_SIZE_TCP - 2U];
     size_t           dns_reply_len;
 
     logger(LOG_DEBUG, "Resolver read callback.");
@@ -239,11 +240,13 @@ resolver_proxy_read_cb(struct bufferevent * const proxy_resolver_bev,
         return;
     }
     theAssert(available_size >= dns_reply_len);
-    dns_reply = evbuffer_pullup(input, (ssize_t) dns_reply_len);
-    if (dns_reply == NULL) {
+    dns_reply_bev = evbuffer_pullup(input, (ssize_t) dns_reply_len);
+    if (dns_reply_bev == NULL) {
         tcp_request_kill(tcp_request);
         return;
     }
+
+    memcpy(dns_reply, dns_reply_bev, dns_reply_len);
 
     size_t max_len = dns_reply_len + DNSCRYPT_MAX_PADDING + DNSCRYPT_REPLY_HEADER_SIZE;
 
@@ -254,10 +257,10 @@ resolver_proxy_read_cb(struct bufferevent * const proxy_resolver_bev,
         }
     }
 
-    dns_uncurved_reply_len_buf[0] = (dns_reply_len >> 8) & 0xff;
-    dns_uncurved_reply_len_buf[1] = dns_reply_len & 0xff;
+    dns_curved_reply_len_buf[0] = (dns_reply_len >> 8) & 0xff;
+    dns_curved_reply_len_buf[1] = dns_reply_len & 0xff;
     if (bufferevent_write(tcp_request->client_proxy_bev,
-                dns_uncurved_reply_len_buf, (size_t) 2U) != 0 ||
+                dns_curved_reply_len_buf, (size_t) 2U) != 0 ||
             bufferevent_write(tcp_request->client_proxy_bev, dns_reply,
                 dns_reply_len) != 0) {
         tcp_request_kill(tcp_request);
