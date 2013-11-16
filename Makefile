@@ -33,7 +33,7 @@ LIB_OBJS += pidfile.o
 LDADD += argparse/libargparse.a
 
 argparse/libargparse.a: argparse/argparse.h
-	@make -C argparse libargparse.a
+	@$(MAKE) -C argparse libargparse.a
 
 argparse/argparse.h:
 	git submodule update --init argparse
