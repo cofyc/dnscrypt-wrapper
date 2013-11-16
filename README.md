@@ -24,11 +24,16 @@ Installation
 Install [libsodium](https://github.com/jedisct1/libsodium) and libevent2 first.
 
 On Linux, don't forget to run `ldconfig` if you installed it from
-source.
+source:
 
     $ git clone --recursive git://github.com/Cofyc/dnscrypt-wrapper.git
     $ make
     $ make install
+
+On freebsd:
+
+    $ pkg_add -r libevent2 # libsoidum should be installed manually
+    $ gmake LDFLAGS='-L/usr/local/lib/event2 -L/usr/local/lib' CFLAGS=-I/usr/local/include
 
 Gentoo ebuild
 -------------
