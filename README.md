@@ -27,7 +27,8 @@ On Linux, don't forget to run `ldconfig` if you installed it from
 source:
 
     $ git clone --recursive git://github.com/Cofyc/dnscrypt-wrapper.git
-    $ make
+    $ make configure
+    $ ./configure
     $ make install
 
 On freebsd:
