@@ -1,6 +1,6 @@
 #include "pidfile.h"
 
-static volatile sig_atomic_t  exit_requested = 0;
+static volatile sig_atomic_t exit_requested = 0;
 static const char *_pidfile = NULL;
 
 static void
@@ -18,7 +18,6 @@ pidfile_atexit_handler(void)
     pidfile_remove_file();
 }
 
-
 static void
 pidfile_sig_exit_handler(int sig)
 {
@@ -34,8 +33,8 @@ pidfile_install_signal_handlers(void (*handler) (int))
 {
     signal(SIGPIPE, SIG_IGN);
     signal(SIGALRM, handler);
-    signal(SIGHUP , handler);
-    signal(SIGINT,  handler);
+    signal(SIGHUP, handler);
+    signal(SIGINT, handler);
     signal(SIGQUIT, handler);
     signal(SIGTERM, handler);
 #ifdef SIGXCPU
@@ -44,7 +43,7 @@ pidfile_install_signal_handlers(void (*handler) (int))
 }
 
 int
-pidfile_create(const char * const pidfile)
+pidfile_create(const char *const pidfile)
 {
     FILE *fp;
     _pidfile = pidfile;

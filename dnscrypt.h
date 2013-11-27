@@ -86,56 +86,58 @@
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_HALF_NONCEBYTES * 2 + crypto_box_MACBYTES)
 
 struct context {
-     struct sockaddr_storage local_sockaddr;
-     struct sockaddr_storage resolver_sockaddr;
-     ev_socklen_t local_sockaddr_len;
-     ev_socklen_t resolver_sockaddr_len;
-     const char *resolver_address;
-     const char *listen_address;
-     struct evconnlistener *tcp_conn_listener;
-     struct event *tcp_accept_timer;
-     struct event *udp_listener_event;
-     struct event *udp_resolver_event;
-     evutil_socket_t udp_listener_handle;
-     evutil_socket_t udp_resolver_handle;
-     TCPRequestQueue tcp_request_queue;
-     UDPRequestQueue udp_request_queue;
-     struct event_base *event_loop;
-     unsigned int connections;
-     size_t edns_payload_size;
+    struct sockaddr_storage local_sockaddr;
+    struct sockaddr_storage resolver_sockaddr;
+    ev_socklen_t local_sockaddr_len;
+    ev_socklen_t resolver_sockaddr_len;
+    const char *resolver_address;
+    const char *listen_address;
+    struct evconnlistener *tcp_conn_listener;
+    struct event *tcp_accept_timer;
+    struct event *udp_listener_event;
+    struct event *udp_resolver_event;
+    evutil_socket_t udp_listener_handle;
+    evutil_socket_t udp_resolver_handle;
+    TCPRequestQueue tcp_request_queue;
+    UDPRequestQueue udp_request_queue;
+    struct event_base *event_loop;
+    unsigned int connections;
+    size_t edns_payload_size;
 
-     /* Domain name shared buffer. */
-     char namebuff[MAXDNAME];
+    /* Domain name shared buffer. */
+    char namebuff[MAXDNAME];
 
-     /* Process stuff. */
-     bool daemonize;
-     char *pidfile;
-     char *user;
-     uid_t user_id;
-     gid_t user_group;
-     char *user_dir;
-     char *logfile;
-     char *provider_name;
-     char *provider_publickey_file;
-     char *provider_secretkey_file;
-     char *provider_cert_file;
-     struct SignedCert signed_cert;
-     uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
-     uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
-     char *crypt_publickey_file;
-     char *crypt_secretkey_file;
-     uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
-     uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
-     uint64_t nonce_ts_last;
+    /* Process stuff. */
+    bool daemonize;
+    char *pidfile;
+    char *user;
+    uid_t user_id;
+    gid_t user_group;
+    char *user_dir;
+    char *logfile;
+    char *provider_name;
+    char *provider_publickey_file;
+    char *provider_secretkey_file;
+    char *provider_cert_file;
+    struct SignedCert signed_cert;
+    uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
+    uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
+    char *crypt_publickey_file;
+    char *crypt_secretkey_file;
+    uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
+    uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
+    uint64_t nonce_ts_last;
 };
 
 int dnscrypt_cmp_client_nonce(const uint8_t
-                           client_nonce[crypto_box_HALF_NONCEBYTES],
-                           const uint8_t * const buf, const size_t len);
-void dnscrypt_memzero(void * const pnt, const size_t size);
+                              client_nonce[crypto_box_HALF_NONCEBYTES],
+                              const uint8_t *const buf, const size_t len);
+void dnscrypt_memzero(void *const pnt, const size_t size);
 uint64_t dnscrypt_hrtime(void);
-void dnscrypt_key_to_fingerprint(char fingerprint[80U], const uint8_t * const key);
-int dnscrypt_fingerprint_to_key(const char * const fingerprint, uint8_t key[crypto_box_PUBLICKEYBYTES]);
+void dnscrypt_key_to_fingerprint(char fingerprint[80U],
+                                 const uint8_t *const key);
+int dnscrypt_fingerprint_to_key(const char *const fingerprint,
+                                uint8_t key[crypto_box_PUBLICKEYBYTES]);
 
 // vim-like binary display
 static inline void
@@ -184,7 +186,8 @@ _theAssert(char *estr, char *file, int line)
 }
 
 static inline void
-_theAssertPrintBinaryString(uint8_t *s, size_t count, char *estr, char *file, int line)
+_theAssertPrintBinaryString(uint8_t *s, size_t count, char *estr, char *file,
+                            int line)
 {
     _theAssert(estr, file, line);
     print_binary_string_hex(s, count);
@@ -203,9 +206,10 @@ struct dnscrypt_query_header {
 int dnscrypt_server_uncurve(struct context *c,
                             uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                             uint8_t nmkey[crypto_box_BEFORENMBYTES],
-                            uint8_t * const buf, size_t * const lenp);
+                            uint8_t *const buf, size_t * const lenp);
 int dnscrypt_server_curve(struct context *c,
                           uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                           uint8_t nmkey[crypto_box_BEFORENMBYTES],
-                          uint8_t * const buf, size_t * const lenp, const size_t max_len);
+                          uint8_t *const buf, size_t * const lenp,
+                          const size_t max_len);
 #endif

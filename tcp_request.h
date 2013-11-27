@@ -12,25 +12,25 @@
 struct context;
 
 typedef struct TCPRequestStatus_ {
-    bool has_dns_query_len : 1;
-    bool has_dns_reply_len : 1;
-    bool is_in_queue : 1;
-    bool is_dying : 1;
+    bool has_dns_query_len:1;
+    bool has_dns_reply_len:1;
+    bool is_in_queue:1;
+    bool is_dying:1;
 } TCPRequestStatus;
 
 typedef struct TCPRequest_ {
-    uint8_t                  client_nonce[crypto_box_HALF_NONCEBYTES];
+    uint8_t client_nonce[crypto_box_HALF_NONCEBYTES];
     uint8_t nmkey[crypto_box_BEFORENMBYTES];
-    TAILQ_ENTRY(TCPRequest_) queue;
-    struct bufferevent      *client_proxy_bev;
-    struct bufferevent      *proxy_resolver_bev;
-    struct evbuffer         *proxy_resolver_query_evbuf;
-    struct context          *context;
-    struct event            *timeout_timer;
-    TCPRequestStatus         status;
-    size_t                   dns_query_len;
-    size_t                   dns_reply_len;
-    bool                    is_dnscrypted;
+            TAILQ_ENTRY(TCPRequest_) queue;
+    struct bufferevent *client_proxy_bev;
+    struct bufferevent *proxy_resolver_bev;
+    struct evbuffer *proxy_resolver_query_evbuf;
+    struct context *context;
+    struct event *timeout_timer;
+    TCPRequestStatus status;
+    size_t dns_query_len;
+    size_t dns_reply_len;
+    bool is_dnscrypted;
 } TCPRequest;
 
 int tcp_listener_bind(struct context *c);

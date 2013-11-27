@@ -22,8 +22,10 @@ struct SignedCert {
 };
 
 struct SignedCert *cert_build_cert(const uint8_t *crypt_publickey);
-int cert_sign(struct SignedCert *signed_cert, const uint8_t *provider_secretkey);
-int cert_unsign(struct SignedCert *signed_cert, const uint8_t *provider_secretkey);
+int cert_sign(struct SignedCert *signed_cert,
+              const uint8_t *provider_secretkey);
+int cert_unsign(struct SignedCert *signed_cert,
+                const uint8_t *provider_secretkey);
 void cert_display_txt_record_tinydns(struct SignedCert *signed_cert);
 void cert_display_txt_record(struct SignedCert *signed_cert);
 

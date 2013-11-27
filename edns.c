@@ -1,7 +1,7 @@
 #include "dnscrypt.h"
 
 static int
-_skip_name(const uint8_t * const dns_packet, const size_t dns_packet_len,
+_skip_name(const uint8_t *const dns_packet, const size_t dns_packet_len,
            size_t * const offset_p)
 {
     size_t offset = *offset_p;
@@ -31,7 +31,7 @@ _skip_name(const uint8_t * const dns_packet, const size_t dns_packet_len,
 #define DNS_QTYPE_PLUS_QCLASS_LEN 4U
 
 static ssize_t
-edns_get_payload_size(const uint8_t * const dns_packet,
+edns_get_payload_size(const uint8_t *const dns_packet,
                       const size_t dns_packet_len)
 {
     size_t offset;
@@ -80,7 +80,7 @@ edns_get_payload_size(const uint8_t * const dns_packet,
 
 int
 edns_add_section(struct context *const c,
-                 uint8_t * const dns_packet,
+                 uint8_t *const dns_packet,
                  size_t * const dns_packet_len_p,
                  size_t dns_packet_max_size,
                  size_t * const request_edns_payload_size)

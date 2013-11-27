@@ -13,12 +13,12 @@
 
 #ifndef _WIN32
 ssize_t
-safe_write(const int fd, const void * const buf_, size_t count,
+safe_write(const int fd, const void *const buf_, size_t count,
            const int timeout)
 {
-    struct pollfd  pfd;
-    const char    *buf = (const char *) buf_;
-    ssize_t        written;
+    struct pollfd pfd;
+    const char *buf = (const char *)buf_;
+    ssize_t written;
 
     pfd.fd = fd;
     pfd.events = POLLOUT;
@@ -38,18 +38,17 @@ safe_write(const int fd, const void * const buf_, size_t count,
         count -= (size_t) written;
     }
 ret:
-    return (ssize_t) (buf - (const char *) buf_);
+    return (ssize_t) (buf - (const char *)buf_);
 }
 
 ssize_t
-safe_read(const int fd, void * const buf_, size_t count)
+safe_read(const int fd, void *const buf_, size_t count)
 {
-    unsigned char *buf = (unsigned char *) buf_;
-    ssize_t        readnb;
+    unsigned char *buf = (unsigned char *)buf_;
+    ssize_t readnb;
 
     do {
-        while ((readnb = read(fd, buf, count)) < (ssize_t) 0 &&
-               errno == EINTR);
+        while ((readnb = read(fd, buf, count)) < (ssize_t) 0 && errno == EINTR);
         if (readnb < (ssize_t) 0) {
             return readnb;
         }
@@ -60,17 +59,16 @@ safe_read(const int fd, void * const buf_, size_t count)
         buf += readnb;
     } while (count > (ssize_t) 0);
 
-    return (ssize_t) (buf - (unsigned char *) buf_);
+    return (ssize_t) (buf - (unsigned char *)buf_);
 }
 
 ssize_t
-safe_read_partial(const int fd, void * const buf_, const size_t max_count)
+safe_read_partial(const int fd, void *const buf_, const size_t max_count)
 {
-    unsigned char * const buf = (unsigned char *) buf_;
-    ssize_t               readnb;
+    unsigned char *const buf = (unsigned char *)buf_;
+    ssize_t readnb;
 
-    while ((readnb = read(fd, buf, max_count)) < (ssize_t) 0 &&
-           errno == EINTR);
+    while ((readnb = read(fd, buf, max_count)) < (ssize_t) 0 && errno == EINTR);
 
     return readnb;
 }
@@ -78,19 +76,19 @@ safe_read_partial(const int fd, void * const buf_, const size_t max_count)
 #else /* _WIN32 */
 
 ssize_t
-safe_write(const int fd, const void * const buf_, size_t count,
+safe_write(const int fd, const void *const buf_, size_t count,
            const int timeout)
 {
     assert(fd != -1);
     assert(buf_ != NULL);
     assert(count > (size_t) 0U);
-    (void) timeout;
+    (void)timeout;
 
     return -1;
 }
 
 ssize_t
-safe_read(const int fd, void * const buf_, size_t count)
+safe_read(const int fd, void *const buf_, size_t count)
 {
     assert(fd != -1);
     assert(buf_ != NULL);
@@ -100,7 +98,7 @@ safe_read(const int fd, void * const buf_, size_t count)
 }
 
 ssize_t
-safe_read_partial(const int fd, void * const buf_, const size_t max_count)
+safe_read_partial(const int fd, void *const buf_, const size_t max_count)
 {
     assert(fd != -1);
     assert(buf_ != NULL);

@@ -13,7 +13,7 @@ typedef struct UDPRequestStatus_ {
 typedef struct UDPRequest_ {
     uint16_t id;
     unsigned int crc;
-    TAILQ_ENTRY(UDPRequest_) queue;
+        TAILQ_ENTRY(UDPRequest_) queue;
     uint8_t client_nonce[crypto_box_HALF_NONCEBYTES];
     uint8_t nmkey[crypto_box_BEFORENMBYTES];
     bool is_dnscrypted;
@@ -27,12 +27,15 @@ typedef struct UDPRequest_ {
     unsigned char retries;
 } UDPRequest;
 
-typedef TAILQ_HEAD(TCPRequestQueue_, TCPRequest_) TCPRequestQueue;
-typedef TAILQ_HEAD(UDPRequestQueue_, UDPRequest_) UDPRequestQueue;
+typedef
+TAILQ_HEAD(TCPRequestQueue_, TCPRequest_)
+    TCPRequestQueue;
+     typedef TAILQ_HEAD(UDPRequestQueue_, UDPRequest_)
+        UDPRequestQueue;
 
-int udp_listener_bind(struct context *c);
-int udp_listener_start(struct context *c);
-void udp_listener_stop(struct context *c);
-int udp_listener_kill_oldest_request(struct context *c);
+     int udp_listener_bind(struct context *c);
+     int udp_listener_start(struct context *c);
+     void udp_listener_stop(struct context *c);
+     int udp_listener_kill_oldest_request(struct context *c);
 
 #endif

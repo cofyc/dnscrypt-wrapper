@@ -186,6 +186,9 @@ all:: dnscrypt-wrapper
 
 ### Misc rules
 
+fmt:
+	./format.sh
+
 install: all
 	install -p -m 755 dnscrypt-wrapper $(BINDIR)
 
@@ -196,4 +199,4 @@ clean:
 	$(RM) dnscrypt-wrapper
 	$(RM) $(LIB_OBJS)
 
-.PHONY: all install uninstall clean FORCE
+.PHONY: all install uninstall clean FORCE fmt

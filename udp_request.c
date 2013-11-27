@@ -1,7 +1,7 @@
 #include "dnscrypt.h"
 
 typedef struct SendtoWithRetryCtx_ {
-    void (*cb) (UDPRequest * udp_request);
+    void (*cb) (UDPRequest *udp_request);
     const void *buffer;
     UDPRequest *udp_request;
     const struct sockaddr *dest_addr;
@@ -12,7 +12,7 @@ typedef struct SendtoWithRetryCtx_ {
 } SendtoWithRetryCtx;
 
 /* Forward declarations. */
-static int sendto_with_retry(SendtoWithRetryCtx * const ctx);
+static int sendto_with_retry(SendtoWithRetryCtx *const ctx);
 
 #ifndef UDP_BUFFER_SIZE
 # define UDP_BUFFER_SIZE 2097152
@@ -48,13 +48,13 @@ udp_tune(evutil_socket_t const handle)
 }
 
 static void
-client_to_proxy_cb_sendto_cb(UDPRequest * const udp_request)
+client_to_proxy_cb_sendto_cb(UDPRequest *const udp_request)
 {
     (void)udp_request;
 }
 
 static void
-udp_request_kill(UDPRequest * const udp_request)
+udp_request_kill(UDPRequest *const udp_request)
 {
     if (udp_request == NULL || udp_request->status.is_dying)
         return;
@@ -110,9 +110,9 @@ sendto_with_retry_timer_cb(evutil_socket_t retry_timer_handle, short ev_flags,
 }
 
 static int
-sendto_with_retry(SendtoWithRetryCtx * const ctx)
+sendto_with_retry(SendtoWithRetryCtx *const ctx)
 {
-    void (*cb) (UDPRequest * udp_request);
+    void (*cb) (UDPRequest *udp_request);
     SendtoWithRetryCtx *ctx_cb;
     UDPRequest *udp_request = ctx->udp_request;
     int err;
@@ -181,12 +181,12 @@ sendto_with_retry(SendtoWithRetryCtx * const ctx)
 
 static void
 timeout_timer_cb(evutil_socket_t timeout_timer_handle, short ev_flags,
-                 void * const udp_request_)
+                 void *const udp_request_)
 {
-    UDPRequest * const udp_request = udp_request_;
-        
-    (void) ev_flags;
-    (void) timeout_timer_handle;
+    UDPRequest *const udp_request = udp_request_;
+
+    (void)ev_flags;
+    (void)timeout_timer_handle;
     logger(LOG_WARNING, "resolver timeout (UDP)");
     udp_request_kill(udp_request);
 }
@@ -195,7 +195,8 @@ timeout_timer_cb(evutil_socket_t timeout_timer_handle, short ev_flags,
  * Return 0 if served.
  */
 static int
-self_serve_cert_file(struct context *c, struct dns_header *header, size_t dns_query_len, UDPRequest *udp_request)
+self_serve_cert_file(struct context *c, struct dns_header *header,
+                     size_t dns_query_len, UDPRequest *udp_request)
 {
     unsigned char *p;
     unsigned char *ansp;
@@ -224,7 +225,9 @@ self_serve_cert_file(struct context *c, struct dns_header *header, size_t dns_qu
                 return -1;
             *txt = sizeof(struct SignedCert);
             memcpy(txt + 1, &c->signed_cert, sizeof(struct SignedCert));
-            if (add_resource_record(header, nameoffset, &ansp, 0, NULL, T_TXT, C_IN, "t", size, txt)) {
+            if (add_resource_record
+                (header, nameoffset, &ansp, 0, NULL, T_TXT, C_IN, "t", size,
+                 txt)) {
                 anscount++;
             } else {
                 return -1;
@@ -241,18 +244,17 @@ self_serve_cert_file(struct context *c, struct dns_header *header, size_t dns_qu
             header->arcount = htons(0);
             dns_query_len = ansp - (unsigned char *)header;
 
-            /**//* *INDENT-OFF* */
-            sendto_with_retry(&(SendtoWithRetryCtx) {
-                    .udp_request = udp_request,
-                    .handle = udp_request->client_proxy_handle,
-                    .buffer = header,
-                    .length = dns_query_len,
-                    .flags = 0,
-                    .dest_addr = (struct sockaddr *)&udp_request->client_sockaddr,
-                    .dest_len = udp_request->client_sockaddr_len,
-                    .cb = udp_request_kill}
-                );
-            /* *INDENT-ON* */
+            SendtoWithRetryCtx retry_ctx = {
+                .udp_request = udp_request,
+                .handle = udp_request->client_proxy_handle,
+                .buffer = header,
+                .length = dns_query_len,
+                .flags = 0,
+                .dest_addr = (struct sockaddr *)&udp_request->client_sockaddr,
+                .dest_len = udp_request->client_sockaddr_len,
+                .cb = udp_request_kill
+            };
+            sendto_with_retry(&retry_ctx);
             return 0;
         }
     }
@@ -313,9 +315,14 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
            dns_query_len);
 
     // decrypt if encrypted
-    struct dnscrypt_query_header *dnscrypt_header = (struct dnscrypt_query_header *)dns_query;
-    if (memcmp(dnscrypt_header->magic_query, CERT_MAGIC_HEADER, DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
-        if (dnscrypt_server_uncurve(c, udp_request->client_nonce, udp_request->nmkey, dns_query, &dns_query_len) != 0) {
+    struct dnscrypt_query_header *dnscrypt_header =
+        (struct dnscrypt_query_header *)dns_query;
+    if (memcmp
+        (dnscrypt_header->magic_query, CERT_MAGIC_HEADER,
+         DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
+        if (dnscrypt_server_uncurve
+            (c, udp_request->client_nonce, udp_request->nmkey, dns_query,
+             &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             udp_request_kill(udp_request);
             return;
@@ -335,27 +342,25 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
 
     udp_request->id = ntohs(header->id);
     udp_request->crc = questions_crc(header, dns_query_len, c->namebuff);
-    
-    udp_request->timeout_timer = evtimer_new(udp_request->context->event_loop, timeout_timer_cb, udp_request);
+
+    udp_request->timeout_timer =
+        evtimer_new(udp_request->context->event_loop, timeout_timer_cb,
+                    udp_request);
     if (udp_request->timeout_timer) {
-        const struct timeval tv = { 
-            .tv_sec = (time_t) DNS_QUERY_TIMEOUT, .tv_usec = 0 
-        };  
+        const struct timeval tv = {
+            .tv_sec = (time_t) DNS_QUERY_TIMEOUT,.tv_usec = 0
+        };
         evtimer_add(udp_request->timeout_timer, &tv);
     }
 
-    /* *INDENT-OFF* */
-    sendto_with_retry(&(SendtoWithRetryCtx) {
-          .udp_request = udp_request,
-          .handle = c->udp_resolver_handle,
-          .buffer = dns_query,
-          .length = dns_query_len,
-          .flags = 0,
-          .dest_addr = (struct sockaddr *)&c->resolver_sockaddr,
-          .dest_len = c->resolver_sockaddr_len,
-          .cb = client_to_proxy_cb_sendto_cb}
-        );
-    /* *INDENT-ON* */
+    SendtoWithRetryCtx retry_ctx = {
+        .udp_request = udp_request,.handle =
+            c->udp_resolver_handle,.buffer = dns_query,.length =
+            dns_query_len,.flags = 0,.dest_addr =
+            (struct sockaddr *)&c->resolver_sockaddr,.dest_len =
+            c->resolver_sockaddr_len,.cb = client_to_proxy_cb_sendto_cb
+    };
+    sendto_with_retry(&retry_ctx);
 }
 
 /*
@@ -419,29 +424,28 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
         return;
     }
     size_t max_reply_size = DNS_MAX_PACKET_SIZE_UDP;
-    size_t max_len = dns_reply_len + DNSCRYPT_MAX_PADDING + DNSCRYPT_REPLY_HEADER_SIZE;
+    size_t max_len =
+        dns_reply_len + DNSCRYPT_MAX_PADDING + DNSCRYPT_REPLY_HEADER_SIZE;
     if (max_len > max_reply_size)
         max_len = max_reply_size;
 
     if (udp_request->is_dnscrypted) {
-        if (dnscrypt_server_curve(c, udp_request->client_nonce, udp_request->nmkey, dns_reply, &dns_reply_len, max_len) != 0) {
+        if (dnscrypt_server_curve
+            (c, udp_request->client_nonce, udp_request->nmkey, dns_reply,
+             &dns_reply_len, max_len) != 0) {
             logger(LOG_ERR, "Curving reply failed.");
             return;
         }
     }
 
-    /* *INDENT-OFF* */
-    sendto_with_retry(&(SendtoWithRetryCtx) {
-            .udp_request = udp_request,
-            .handle = udp_request->client_proxy_handle,
-            .buffer = dns_reply,
-            .length = dns_reply_len,
-            .flags = 0,
-            .dest_addr = (struct sockaddr *)&udp_request->client_sockaddr,
-            .dest_len = udp_request->client_sockaddr_len,
-            .cb = udp_request_kill}
-        );
-    /* *INDENT-ON* */
+    SendtoWithRetryCtx retry_ctx = {
+        .udp_request = udp_request,.handle =
+            udp_request->client_proxy_handle,.buffer =
+            dns_reply,.length = dns_reply_len,.flags = 0,.dest_addr =
+            (struct sockaddr *)&udp_request->client_sockaddr,.dest_len =
+            udp_request->client_sockaddr_len,.cb = udp_request_kill
+    };
+    sendto_with_retry(&retry_ctx);
 }
 
 int
