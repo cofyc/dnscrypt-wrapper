@@ -1,0 +1,16 @@
+# Makefile configuration, included by Makefile.
+
+CC = @CC@
+CFLAGS = @CFLAGS@
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+AR = @AR@
+TAR = @TAR@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+datarootdir = @datarootdir@
+sysconfdir = @sysconfdir@
+srcdir = @srcdir@
+mandir=@mandir@
