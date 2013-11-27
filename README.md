@@ -23,8 +23,7 @@ Installation
 
 Install [libsodium](https://github.com/jedisct1/libsodium) and libevent2 first.
 
-On Linux, don't forget to run `ldconfig` if you installed it from
-source:
+On linux:
 
     $ git clone --recursive git://github.com/Cofyc/dnscrypt-wrapper.git
     $ make configure
@@ -33,14 +32,10 @@ source:
 
 On freebsd:
 
-    $ pkg_add -r libevent2 # libsoidum should be installed manually
+    $ pkg_add -r gmake autoconf
+    $ pkg_add -r libevent2
     $ gmake LDFLAGS='-L/usr/local/lib/event2 -L/usr/local/lib' CFLAGS=-I/usr/local/include
 
-Gentoo ebuild
--------------
-
-See https://github.com/Cofyc/portage-overlay/tree/master/net-misc/dnscrypt-wrapper.
-    
 Usage
 =====
 
