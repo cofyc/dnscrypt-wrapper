@@ -38,7 +38,10 @@ udp_tune(evutil_socket_t const handle)
                UDP_BUFFER_SIZE}, sizeof(int));
     setsockopt(handle, SOL_SOCKET, SO_SNDBUFFORCE, (void *)(int[]) {
                UDP_BUFFER_SIZE}, sizeof(int));
-#if defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DONT)
+#if defined(IP_PMTUDISC_OMIT)
+    setsockopt(handle, IPPROTO_IP, IP_MTU_DISCOVER,
+               (void *) (int []) { IP_PMTUDISC_OMIT }, sizeof (int));
+#elif defined(IP_MTU_DISCOVER) && defined(IP_PMTUDISC_DONT)
     setsockopt(handle, IPPROTO_IP, IP_MTU_DISCOVER, (void *)(int[]) {
                IP_PMTUDISC_DONT}, sizeof(int));
 #elif defined(IP_DONTFRAG)
