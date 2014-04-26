@@ -44,6 +44,10 @@ tcp_tune(evutil_socket_t handle)
     }
     setsockopt(handle, IPPROTO_TCP, TCP_NODELAY, (void *)(int[]) {
                1}, sizeof(int));
+#if defined(__linux__) && defined(SO_REUSEPORT)
+    setsockopt(handle, SOL_SOCKET, SO_REUSEPORT, (void *)(int[]) {
+        1}, sizeof(int));
+#endif
 }
 
 static void

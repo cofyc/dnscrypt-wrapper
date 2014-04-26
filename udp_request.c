@@ -45,6 +45,10 @@ udp_tune(evutil_socket_t const handle)
     setsockopt(handle, IPPROTO_IP, IP_DONTFRAG, (void *)(int[]) {
                0}, sizeof(int));
 #endif
+#if defined(__linux__) && defined(SO_REUSEPORT)
+    setsockopt(handle, SOL_SOCKET, SO_REUSEPORT, (void *)(int[]) {
+        1}, sizeof(int));
+#endif
 }
 
 static void
