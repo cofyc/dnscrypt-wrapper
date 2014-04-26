@@ -68,9 +68,9 @@ Run dnscrypt-proxy to test againt it:
     $ ./dnscrypt-proxy -a 127.0.0.1:55 --provider-name=2.dnscrypt-cert.yechengfu.com -r 127.0.0.1:54 --provider-key=4298:5F65:C295:DFAE:2BFB:20AD:5C47:F565:78EB:2404:EF83:198C:85DB:68F1:3E33:E952
     $ dig -p 55 google.com @127.0.0.1
 
-Optional, add "-d/--daemonize" flag to run as daemon.
+Optional, add `-d/--daemonize` flag to run as daemon.
 
-Run "./dnscrypt-wrapper -h" to view command line options.
+Run `./dnscrypt-wrapper -h` to view command line options.
 
 See also
 ========
