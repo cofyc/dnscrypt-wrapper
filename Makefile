@@ -8,7 +8,7 @@ all::
 ### Defaults
 
 BASIC_CFLAGS = -O2 -std=c99 -pedantic -Wall -I./argparse
-BASIC_LDFLAGS = -lm -lsodium -levent
+BASIC_LDFLAGS = -lm -lsodium
 
 # Guard against environment variables
 LIB_H = 
@@ -51,6 +51,12 @@ BINDIR = $(PREFIX)/bin
 
 ifeq ($(uname_S),Linux)
 	ALL_LDFLAGS += -lrt
+endif
+
+ifeq ($(uname_S),OpenBSD)
+	BASIC_LDFLAGS += -levent_core
+else
+	BASIC_LDFLAGS += -levent
 endif
 
 ifneq ($(findstring $(MAKEFLAGS),s), s)

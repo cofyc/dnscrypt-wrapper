@@ -33,8 +33,14 @@ On linux:
 On freebsd:
 
     $ pkg_add -r gmake autoconf
-    $ pkg_add -r libevent2
+    $ pkg_add -r libevent
     $ gmake LDFLAGS='-L/usr/local/lib/event2 -L/usr/local/lib' CFLAGS=-I/usr/local/include
+
+On openbsd:
+
+    $ pkg_add -r gmake autoconf
+    $ pkg_add -r libevent2
+    $ gmake LDFLAGS='-L/usr/local/lib/' CFLAGS=-I/usr/local/include/
 
 Usage
 =====
