@@ -32,15 +32,17 @@ cert_build_cert(const uint8_t *crypt_publickey)
 int
 cert_sign(struct SignedCert *signed_cert, const uint8_t *provider_secretkey)
 {
-    size_t crypted_signed_data_len = 0;
-    size_t signed_data_len =
+    struct SignedCert cert;
+    unsigned long long crypted_signed_data_len = 0;
+    unsigned long long signed_data_len =
         sizeof(struct SignedCert) - offsetof(struct SignedCert,
                                              server_publickey) -
         sizeof(signed_cert->end);
+    memcpy(&cert, signed_cert, sizeof cert);
     if (crypto_sign_ed25519
         (signed_cert->server_publickey,
-         (unsigned long long *)&crypted_signed_data_len,
-         signed_cert->server_publickey, signed_data_len,
+         &crypted_signed_data_len,
+         cert.server_publickey, signed_data_len,
          provider_secretkey) != 0) {
         return -1;
     }
@@ -50,14 +52,14 @@ cert_sign(struct SignedCert *signed_cert, const uint8_t *provider_secretkey)
 int
 cert_unsign(struct SignedCert *signed_cert, const uint8_t *provider_secretkey)
 {
-    size_t crypted_signed_data_len = 0;
-    size_t signed_data_len =
+    unsigned long long crypted_signed_data_len = 0;
+    unsigned long long signed_data_len =
         sizeof(struct SignedCert) - offsetof(struct SignedCert,
                                              server_publickey) -
         sizeof(signed_cert->end);
     if (crypto_sign_ed25519_open
         (signed_cert->server_publickey,
-         (unsigned long long *)&crypted_signed_data_len,
+         &crypted_signed_data_len,
          signed_cert->server_publickey, signed_data_len,
          provider_secretkey) != 0) {
         return -1;
