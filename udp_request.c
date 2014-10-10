@@ -468,6 +468,8 @@ udp_listener_bind(struct context *c)
         return -1;
     }
 
+    udp_tune(c->udp_listener_handle);
+
     evutil_make_socket_closeonexec(c->udp_listener_handle);
     evutil_make_socket_nonblocking(c->udp_listener_handle);
     if (bind
@@ -480,8 +482,6 @@ udp_listener_bind(struct context *c)
         c->udp_listener_handle = -1;
         return -1;
     }
-
-    udp_tune(c->udp_listener_handle);
 
     // resolver socket
     assert(c->udp_resolver_handle == -1);
