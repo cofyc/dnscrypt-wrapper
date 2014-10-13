@@ -400,15 +400,21 @@ tcp_listener_bind(struct context *c)
 #ifndef LEV_OPT_DEFERRED_ACCEPT
 # define LEV_OPT_DEFERRED_ACCEPT 0
 #endif
+
+    evutil_socket_t fd;
+    fd = socket(c->local_sockaddr.ss_family, SOCK_STREAM, IPPROTO_TCP);
+    
+    tcp_tune(fd);
+
     c->tcp_conn_listener =
-        evconnlistener_new_bind(c->event_loop,
+        evconnlistener_new(c->event_loop,
                                 tcp_connection_cb, c,
                                 LEV_OPT_CLOSE_ON_FREE |
                                 LEV_OPT_CLOSE_ON_EXEC |
                                 LEV_OPT_REUSEABLE |
                                 LEV_OPT_DEFERRED_ACCEPT,
-                                TCP_REQUEST_BACKLOG, (struct sockaddr *)
-                                &c->local_sockaddr, (int)c->local_sockaddr_len);
+                                TCP_REQUEST_BACKLOG,
+                                fd);
     if (c->tcp_conn_listener == NULL) {
         logger(LOG_ERR, "Unable to bind (TCP)");
         return -1;
