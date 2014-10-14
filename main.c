@@ -188,6 +188,7 @@ main(int argc, const char **argv)
     int gen_provider_keypair = 0;
     int gen_crypt_keypair = 0;
     int gen_cert_file = 0;
+    int cert_file_expire_days = CERT_FILE_EXPIRE_DAYS;
     int verbose = 0;
     struct argparse argparse;
     struct argparse_option options[] = {
@@ -219,6 +220,7 @@ main(int argc, const char **argv)
                    "provider secret key file"),
         OPT_BOOLEAN(0, "gen-cert-file", &gen_cert_file,
                     "generate pre-signed certificate"),
+        OPT_INTEGER(0, "cert-file-expire-days", &cert_file_expire_days),
         OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
         OPT_STRING(0, "provider-cert-file", &c.provider_cert_file,
                    "use this to self-serve cert file"),
@@ -323,7 +325,7 @@ main(int argc, const char **argv)
             exit(1);
         }
         logger(LOG_NOTICE, "Generating pre-signed certificate.");
-        struct SignedCert *signed_cert = cert_build_cert(c.crypt_publickey);
+        struct SignedCert *signed_cert = cert_build_cert(c.crypt_publickey, cert_file_expire_days);
         if (!signed_cert || cert_sign(signed_cert, c.provider_secretkey) != 0) {
             logger(LOG_NOTICE, "Failed.");
             exit(1);

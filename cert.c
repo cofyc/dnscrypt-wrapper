@@ -1,7 +1,7 @@
 #include "dnscrypt.h"
 
 struct SignedCert *
-cert_build_cert(const uint8_t *crypt_publickey)
+cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days)
 {
     struct SignedCert *signed_cert = malloc(sizeof(struct SignedCert));
     if (!signed_cert)
@@ -19,7 +19,10 @@ cert_build_cert(const uint8_t *crypt_publickey)
            sizeof(signed_cert->magic_query));
     memcpy(signed_cert->serial, "0001", 4);
     uint32_t ts_begin = (uint32_t)time(NULL);
-    uint32_t ts_end = ts_begin + 365 * 24 * 3600;
+    uint32_t ts_end = ts_begin + cert_file_expire_days * 24 * 3600;
+    if (cert_file_expire_days <= 0) {
+        ts_begin = ts_end;
+    }
     ts_begin = htonl(ts_begin);
     ts_end = htonl(ts_end);
     memcpy(signed_cert->ts_begin, &ts_begin, 4);
