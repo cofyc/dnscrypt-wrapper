@@ -406,7 +406,7 @@ tcp_listener_bind(struct context *c)
      * socket(), tcp_tune(), bind(), evconnlistener_new() */
     evutil_socket_t fd;
     fd = socket(c->local_sockaddr.ss_family, SOCK_STREAM, IPPROTO_TCP);
-    
+
     tcp_tune(fd);
     evutil_make_socket_nonblocking(fd);
 
