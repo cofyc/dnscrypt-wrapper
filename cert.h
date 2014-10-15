@@ -7,6 +7,8 @@
 #define CERT_MINOR_VERSION 0
 #define CERT_MAGIC_HEADER "7PYqwfzt"
 
+#define CERT_FILE_EXPIRE_DAYS 365
+
 struct SignedCert {
     uint8_t magic_cert[4];
     uint8_t version_major[2];
@@ -21,7 +23,7 @@ struct SignedCert {
     uint8_t end[64];
 };
 
-struct SignedCert *cert_build_cert(const uint8_t *crypt_publickey);
+struct SignedCert *cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days);
 int cert_sign(struct SignedCert *signed_cert,
               const uint8_t *provider_secretkey);
 int cert_unsign(struct SignedCert *signed_cert,
