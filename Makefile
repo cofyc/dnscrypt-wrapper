@@ -190,10 +190,8 @@ main.o: version.h
 
 all:: dnscrypt-wrapper
 
-### Misc rules
-
-fmt:
-	./format.sh
+version.h: FORCE
+	@./gen-version.sh
 
 install: all
 	install -p -m 755 dnscrypt-wrapper $(BINDIR)
