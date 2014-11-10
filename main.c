@@ -220,7 +220,7 @@ main(int argc, const char **argv)
                    "provider secret key file"),
         OPT_BOOLEAN(0, "gen-cert-file", &gen_cert_file,
                     "generate pre-signed certificate"),
-        OPT_INTEGER(0, "cert-file-expire-days", &cert_file_expire_days),
+        OPT_INTEGER(0, "cert-file-expire-days", &cert_file_expire_days, "cert file expire days (default: 365)"),
         OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
         OPT_STRING(0, "provider-cert-file", &c.provider_cert_file,
                    "use this to self-serve cert file"),
