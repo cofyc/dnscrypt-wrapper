@@ -83,7 +83,6 @@ udp_request_kill(UDPRequest *const udp_request)
     c = udp_request->context;
     if (udp_request->status.is_in_queue != 0) {
         assert(!TAILQ_EMPTY(&c->udp_request_queue));
-        TAILQ_REMOVE(&c->udp_request_queue, udp_request, queue);
         assert(c->connections > 0);
         c->connections--;
     }
@@ -97,9 +96,9 @@ udp_listener_kill_oldest_request(struct context *c)
 {
     if (TAILQ_EMPTY(&c->udp_request_queue))
         return -1;
-
-    udp_request_kill(TAILQ_FIRST(&c->udp_request_queue));
-
+    UDPRequest *udp_request = TAILQ_FIRST(&c->udp_request_queue);
+    udp_request_kill(udp_request);
+    TAILQ_REMOVE(&c->udp_request_queue, udp_request, queue);
     return 0;
 }
 

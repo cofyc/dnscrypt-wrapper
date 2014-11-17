@@ -228,7 +228,7 @@ main(int argc, const char **argv)
     };
 
     argparse_init(&argparse, options, config_usage, 0);
-    argc = argparse_parse(&argparse, argc, argv);
+    argparse_parse(&argparse, argc, argv);
     if (sodium_init() != 0) {
         return 1;
     }
