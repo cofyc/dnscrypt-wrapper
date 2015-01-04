@@ -170,52 +170,30 @@ extract_name(struct dns_header *header, size_t plen, unsigned char **pp, char
     }
 }
 
-/* CRC the question section. This is used to safely detect query 
+/* Hash the question section. This is used to safely detect query
    retransmision and to detect answers to questions we didn't ask, which 
    might be poisoning attacks. Note that we decode the name rather 
-   than CRC the raw bytes, since replies might be compressed differently. 
+   than hash the raw bytes, since replies might be compressed differently. 
    We ignore case in the names for the same reason. Return all-ones
    if there is not question section. */
-unsigned int 
-questions_crc(struct dns_header *header, size_t plen, char *name)
+uint64_t
+questions_hash(struct dns_header *header, size_t plen, char *name, const unsigned char key[crypto_shorthash_KEYBYTES])
 {
-  int q;
-  unsigned int crc = 0xffffffff;
-  unsigned char *p1, *p = (unsigned char *)(header+1);
+  unsigned char qb[MAXDNAME + 4];
+  uint64_t hash = 0xffffffffffffffffULL;
+  unsigned char *p = (unsigned char *)(header+1);
+  size_t name_len;
 
-  for (q = ntohs(header->qdcount); q != 0; q--) 
-    {
-      if (!extract_name(header, plen, &p, name, 1, 4))
-	return crc; /* bad packet */
-      
-      for (p1 = (unsigned char *)name; *p1; p1++)
-	{
-	  int i = 8;
-	  char c = *p1;
+  if (ntohs(header->qdcount) != 1 ||
+      !extract_name(header, plen, &p, name, 1, 4) ||
+      (name_len = strlen(name)) > (sizeof qb - 4)) {
+      return hash;
+  }
+  memcpy(qb, name, name_len);
+  memcpy(qb + name_len, p, 4);
+  crypto_shorthash((unsigned char *) &hash, qb, name_len + 4ULL, key);
 
-	  if (c >= 'A' && c <= 'Z')
-	    c += 'a' - 'A';
-
-	  crc ^= c << 24;
-	  while (i--)
-	    crc = crc & 0x80000000 ? (crc << 1) ^ 0x04c11db7 : crc << 1;
-	}
-      
-      /* CRC the class and type as well */
-      for (p1 = p; p1 < p+4; p1++)
-	{
-	  int i = 8;
-	  crc ^= *p1 << 24;
-	  while (i--)
-	    crc = crc & 0x80000000 ? (crc << 1) ^ 0x04c11db7 : crc << 1;
-	}
-
-      p += 4;
-      if (!CHECK_LEN(header, p, plen, 0))
-	return crc; /* bad packet */
-    }
-
-  return crc;
+  return hash;
 }
 
 static unsigned char *skip_name(unsigned char *ansp, struct dns_header *header, size_t plen, int extrabytes)
