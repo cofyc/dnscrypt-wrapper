@@ -46,6 +46,7 @@ export prefix bindir sharedir
 
 CC = cc
 RM = rm -rf
+INSTALL = install
 
 ifeq ($(uname_S),Linux)
 	ALL_LDFLAGS += -lrt
@@ -192,7 +193,8 @@ version.h: FORCE
 	@./gen-version.sh
 
 install: all
-	install -D -p -m 755 dnscrypt-wrapper $(bindir)
+	$(INSTALL) -d -m 755 '$(bindir)'
+	$(INSTALL) -p dnscrypt-wrapper '$(bindir)'
 
 uninstall:
 	$(RM) $(bindir)/dnscrypt-wrapper
@@ -201,4 +203,4 @@ clean:
 	$(RM) dnscrypt-wrapper
 	$(RM) $(LIB_OBJS)
 
-.PHONY: all install uninstall clean FORCE fmt
+.PHONY: all install uninstall clean FORCE
