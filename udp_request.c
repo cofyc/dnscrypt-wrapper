@@ -38,6 +38,10 @@ static int udp_request_cmp(const UDPRequest *r1, const UDPRequest *r2) {
         return -1;
     } else if (r1->id > r2->id) {
         return 1;
+    } else if (r1->gen < r2->gen) {
+        return -1;
+    } else if (r1->gen > r2->gen) {
+        return 1;
     }
     return 0;
 }
@@ -367,8 +371,10 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
         udp_request_kill(udp_request);
     }
 
-    c->connections++;
+    static uint16_t gen;
+    udp_request->gen = gen++;
     udp_request->status.is_in_queue = 1;
+    c->connections++;
     RB_INSERT(UDPRequestQueue_, &c->udp_request_queue, udp_request);
 
     udp_request->timeout_timer =
@@ -402,8 +408,13 @@ lookup_request(struct context *c, uint16_t id, uint64_t hash)
 
     scanned_udp_request.hash = hash;
     scanned_udp_request.id = id;
-    found_udp_request = RB_FIND(UDPRequestQueue_, &c->udp_request_queue,
-                                &scanned_udp_request);
+    scanned_udp_request.gen = (uint16_t) 0U;
+    found_udp_request = RB_NFIND(UDPRequestQueue_, &c->udp_request_queue,
+                                 &scanned_udp_request);
+    if (found_udp_request == NULL ||
+        found_udp_request->hash != hash || found_udp_request->id != id) {
+        return NULL;
+    }
     return found_udp_request;
 }
 

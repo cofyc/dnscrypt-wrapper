@@ -17,6 +17,7 @@ typedef struct UDPRequest_ {
     struct event *timeout_timer;
     uint64_t hash;
     uint16_t id;
+    uint16_t gen;
     uint8_t client_nonce[crypto_box_HALF_NONCEBYTES];
     uint8_t nmkey[crypto_box_BEFORENMBYTES];
     struct sockaddr_storage client_sockaddr;
