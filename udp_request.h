@@ -11,20 +11,20 @@ typedef struct UDPRequestStatus_ {
 } UDPRequestStatus;
 
 typedef struct UDPRequest_ {
-    uint16_t id;
-    uint64_t hash;
     RB_ENTRY(UDPRequest_) queue;
-    uint8_t client_nonce[crypto_box_HALF_NONCEBYTES];
-    uint8_t nmkey[crypto_box_BEFORENMBYTES];
-    bool is_dnscrypted;
-    struct sockaddr_storage client_sockaddr;
     struct context *context;
     struct event *sendto_retry_timer;
     struct event *timeout_timer;
+    uint64_t hash;
+    uint16_t id;
+    uint8_t client_nonce[crypto_box_HALF_NONCEBYTES];
+    uint8_t nmkey[crypto_box_BEFORENMBYTES];
+    struct sockaddr_storage client_sockaddr;
     evutil_socket_t client_proxy_handle;
     ev_socklen_t client_sockaddr_len;
     UDPRequestStatus status;
     unsigned char retries;
+    bool is_dnscrypted;
 } UDPRequest;
 
 typedef TAILQ_HEAD(TCPRequestQueue_, TCPRequest_) TCPRequestQueue;
