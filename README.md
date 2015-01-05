@@ -63,11 +63,11 @@ Run the program with pre-signed certificate:
 
     $ ./dnscrypt-wrapper  -r 8.8.8.8:53 -a 0.0.0.0:54  --crypt-secretkey-file=crypt_secret.key --crypt-publickey-file=crypt_public.key --provider-cert-file=dnscrypt.cert --provider-name=2.dnscrypt-cert.yechengfu.com -VV
 
-If you can store genearted pre-signed certificate (binary string) in TXT record for your provider name, for example: 2.dnscrypt-cert.yourdomain.com. Then you can omit `--provider-cert-file` option. Name server will serve this binary certificate data for you.
+If you can store generated pre-signed certificate (binary string) in TXT record for your provider name, for example: 2.dnscrypt-cert.yourdomain.com. Then you can omit `--provider-cert-file` option. Name server will serve this binary certificate data for you.
 
 P.S. We still provide `--provider-cert-file` option, because it's not convenient to store such long binary data in dns TXT record sometimes. But it's easy to configure it in your own dns servers (such as tinydns, etc). `--gen-cert-file` will generate example record in stdout.
 
-Run dnscrypt-proxy to test againt it:
+Run dnscrypt-proxy to test against it:
 
     # --provider-key is public key fingerprint in first step.
     $ ./dnscrypt-proxy -a 127.0.0.1:55 --provider-name=2.dnscrypt-cert.yechengfu.com -r 127.0.0.1:54 --provider-key=<provider_public_key_fingerprint>
