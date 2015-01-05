@@ -13,7 +13,7 @@ typedef struct UDPRequestStatus_ {
 typedef struct UDPRequest_ {
     uint16_t id;
     uint64_t hash;
-    TAILQ_ENTRY(UDPRequest_) queue;
+    RB_ENTRY(UDPRequest_) queue;
     uint8_t client_nonce[crypto_box_HALF_NONCEBYTES];
     uint8_t nmkey[crypto_box_BEFORENMBYTES];
     bool is_dnscrypted;
@@ -28,7 +28,7 @@ typedef struct UDPRequest_ {
 } UDPRequest;
 
 typedef TAILQ_HEAD(TCPRequestQueue_, TCPRequest_) TCPRequestQueue;
-typedef TAILQ_HEAD(UDPRequestQueue_, UDPRequest_) UDPRequestQueue;
+typedef RB_HEAD(UDPRequestQueue_, UDPRequest_) UDPRequestQueue;
 
 int udp_listener_bind(struct context *c);
 int udp_listener_start(struct context *c);

@@ -29,6 +29,21 @@ static int sendto_with_retry(SendtoWithRetryCtx *const ctx);
 # define SO_SNDBUFFORCE SO_SNDBUF
 #endif
 
+static int udp_request_cmp(const UDPRequest *r1, const UDPRequest *r2) {
+    if (r1->hash < r2->hash) {
+        return -1;
+    } else if (r1->hash > r2->hash) {
+        return 1;
+    } else if (r1->id < r2->id) {
+        return -1;
+    } else if (r1->id > r2->id) {
+        return 1;
+    }
+    return 0;
+}
+
+RB_GENERATE_STATIC(UDPRequestQueue_, UDPRequest_, queue, udp_request_cmp)
+
 static void
 udp_tune(evutil_socket_t const handle)
 {
@@ -83,8 +98,8 @@ udp_request_kill(UDPRequest *const udp_request)
 
     c = udp_request->context;
     if (udp_request->status.is_in_queue != 0) {
-        assert(!TAILQ_EMPTY(&c->udp_request_queue));
-        TAILQ_REMOVE(&c->udp_request_queue, udp_request, queue);
+        assert(!RB_EMPTY(&c->udp_request_queue));
+        RB_REMOVE(UDPRequestQueue_, &c->udp_request_queue, udp_request);
         assert(c->connections > 0);
         c->connections--;
     }
@@ -96,10 +111,10 @@ udp_request_kill(UDPRequest *const udp_request)
 int
 udp_listener_kill_oldest_request(struct context *c)
 {
-    if (TAILQ_EMPTY(&c->udp_request_queue))
+    if (RB_EMPTY(&c->udp_request_queue))
         return -1;
 
-    udp_request_kill(TAILQ_FIRST(&c->udp_request_queue));
+    udp_request_kill(RB_MIN(UDPRequestQueue_, &c->udp_request_queue));
 
     return 0;
 }
@@ -313,10 +328,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
         return;
     }
 
-    c->connections++;
-    TAILQ_INSERT_TAIL(&c->udp_request_queue, udp_request, queue);
     memset(&udp_request->status, 0, sizeof(udp_request->status));
-    udp_request->status.is_in_queue = 1;
     dns_query_len = (size_t) nread;
     assert(dns_query_len <= sizeof(dns_query));
 
@@ -333,7 +345,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
             (c, udp_request->client_nonce, udp_request->nmkey, dns_query,
              &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
-            udp_request_kill(udp_request);
+            free(udp_request);
             return;
         }
         udp_request->is_dnscrypted = true;
@@ -354,6 +366,10 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
         logger(LOG_WARNING, "Received a suspicious query from the client");
         udp_request_kill(udp_request);
     }
+
+    c->connections++;
+    udp_request->status.is_in_queue = 1;
+    RB_INSERT(UDPRequestQueue_, &c->udp_request_queue, udp_request);
 
     udp_request->timeout_timer =
         evtimer_new(udp_request->context->event_loop, timeout_timer_cb,
@@ -381,14 +397,14 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
 static UDPRequest *
 lookup_request(struct context *c, uint16_t id, uint64_t hash)
 {
-    UDPRequest *scanned_udp_request;
-    TAILQ_FOREACH(scanned_udp_request, &c->udp_request_queue, queue) {
-        if (id == scanned_udp_request->id
-            && scanned_udp_request->hash == hash) {
-            return scanned_udp_request;
-        }
-    }
-    return NULL;
+    UDPRequest *found_udp_request;
+    UDPRequest scanned_udp_request;
+
+    scanned_udp_request.hash = hash;
+    scanned_udp_request.id = id;
+    found_udp_request = RB_FIND(UDPRequestQueue_, &c->udp_request_queue,
+                                &scanned_udp_request);
+    return found_udp_request;
 }
 
 static void
@@ -502,7 +518,7 @@ udp_listener_bind(struct context *c)
     evutil_make_socket_nonblocking(c->udp_resolver_handle);
     udp_tune(c->udp_resolver_handle);
 
-    TAILQ_INIT(&c->udp_request_queue);
+    RB_INIT(&c->udp_request_queue);
 
     return 0;
 }
