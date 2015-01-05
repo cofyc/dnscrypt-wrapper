@@ -2,6 +2,7 @@
 #define DNSCRYPT_H
 
 #include "compat.h"
+#include "tree.h"
 #include <event2/event.h>
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
