@@ -237,12 +237,18 @@ main(int argc, const char **argv)
         uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
         uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
         printf("Generate provider key pair...");
+        fflush(stdout);
         if (crypto_sign_ed25519_keypair(provider_publickey, provider_secretkey)
             == 0) {
             printf(" ok.\n");
             char fingerprint[80];
             dnscrypt_key_to_fingerprint(fingerprint, provider_publickey);
-            printf("Public key fingerprint: %s\n", fingerprint);
+            printf("Public key fingerprint: %s\n\n", fingerprint);
+            printf("This is the provider key you should give to users for your service.\n"
+                   "(i.e. dnscrypt-proxy --provider-key=%s\n"
+                   "                     --resolver-address=<your resolver public IP>\n"
+                   "                     --resolver-address=2.dnscrypt-cert...)\n",
+                   fingerprint);
             if (write_to_file
                 ("public.key", (char *)provider_publickey,
                  crypto_sign_ed25519_PUBLICKEYBYTES) == 0
@@ -262,6 +268,7 @@ main(int argc, const char **argv)
         uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
         uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
         printf("Generate crypt key pair...");
+        fflush(stdout);
         if (crypto_box_keypair(crypt_publickey, crypt_secretkey) == 0) {
             printf(" ok.\n");
             if (write_to_file
