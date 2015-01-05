@@ -364,7 +364,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     struct dns_header *header = (struct dns_header *)dns_query;
 
     // self serve signed certficate for provider name?
-    if (c->provider_cert_file && c->provider_name) {
+    if (!udp_request->is_dnscrypted && c->provider_cert_file && c->provider_name) {
         if (self_serve_cert_file(c, header, dns_query_len, udp_request) == 0)
             return;
     }
