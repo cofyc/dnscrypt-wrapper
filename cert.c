@@ -78,7 +78,7 @@ cert_display_txt_record_tinydns(struct SignedCert *signed_cert)
 
     fputs("'2.dnscrypt-cert:", stdout);
     while (i < sizeof(struct SignedCert)) {
-        c = (int)*(signed_cert->magic_cert + i);
+        c = (int)*((const uint8_t *) signed_cert + i);
         if (isprint(c) && c != ':' && c != '\\' && c != '&' && c != '<'
             && c != '>') {
             putchar(c);
@@ -98,7 +98,7 @@ cert_display_txt_record(struct SignedCert *signed_cert)
 
     fputs("2.dnscrypt-cert\t86400\tIN\tTXT\t\"", stdout);
     while (i < sizeof(struct SignedCert)) {
-        c = (int)*(signed_cert->magic_cert + i);
+        c = (int)*((const uint8_t *) signed_cert + i);
         if (isprint(c) && c != '"' && c != '\\') {
             putchar(c);
         } else {
