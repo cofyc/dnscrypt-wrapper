@@ -46,8 +46,6 @@ export prefix bindir sharedir
 
 CC = cc
 RM = rm -rf
-PREFIX = /usr/local
-BINDIR = $(PREFIX)/bin
 
 ifeq ($(uname_S),Linux)
 	ALL_LDFLAGS += -lrt
@@ -194,10 +192,10 @@ version.h: FORCE
 	@./gen-version.sh
 
 install: all
-	install -p -m 755 dnscrypt-wrapper $(BINDIR)
+	install -D -p -m 755 dnscrypt-wrapper $(bindir)
 
 uninstall:
-	$(RM) $(BINDIR)/dnscrypt-wrapper
+	$(RM) $(bindir)/dnscrypt-wrapper
 
 clean:
 	$(RM) dnscrypt-wrapper
