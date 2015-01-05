@@ -407,6 +407,8 @@ main(int argc, const char **argv)
         exit(1);
     }
 
+    randombytes_buf(c.hash_key, sizeof c.hash_key);
+
     if ((c.event_loop = event_base_new()) == NULL) {
         logger(LOG_ERR, "Unable to initialize the event loop.");
         exit(1);

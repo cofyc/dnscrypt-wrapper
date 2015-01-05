@@ -127,6 +127,7 @@ struct context {
     uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
     uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
     uint64_t nonce_ts_last;
+    unsigned char hash_key[crypto_shorthash_KEYBYTES];
 };
 
 int dnscrypt_cmp_client_nonce(const uint8_t

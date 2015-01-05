@@ -1,3 +1,4 @@
+
 #include "dnscrypt.h"
 
 typedef struct SendtoWithRetryCtx_ {
@@ -349,7 +350,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     }
 
     udp_request->id = ntohs(header->id);
-    udp_request->crc = questions_crc(header, dns_query_len, c->namebuff);
+    udp_request->hash = questions_hash(header, dns_query_len, c->namebuff, c->hash_key);
 
     udp_request->timeout_timer =
         evtimer_new(udp_request->context->event_loop, timeout_timer_cb,
@@ -372,18 +373,17 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
 }
 
 /*
- * Find corresponding request by DNS id and crc of questions.
- * Don't check crc if not know (0xffffffff).
+ * Find corresponding request by DNS id and hash of questions.
+ * Don't check hash if not know (0xffffffffffffffff).
  */
 static UDPRequest *
-lookup_request(struct context *c, uint16_t id, unsigned int crc)
+lookup_request(struct context *c, uint16_t id, uint64_t hash)
 {
     UDPRequest *scanned_udp_request;
     TAILQ_FOREACH(scanned_udp_request, &c->udp_request_queue, queue) {
         if (id == scanned_udp_request->id
-            && (scanned_udp_request->crc == crc || crc == 0xffffffff)) {
+            && (scanned_udp_request->hash == hash || hash == 0xffffffffffffffffULL)) {
             return scanned_udp_request;
-            break;
         }
     }
     return NULL;
@@ -425,8 +425,8 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
 
     struct dns_header *header = (struct dns_header *)dns_reply;
     uint16_t id = ntohs(header->id);
-    unsigned int crc = questions_crc(header, dns_reply_len, c->namebuff);
-    udp_request = lookup_request(c, id, crc);
+    uint64_t hash = questions_hash(header, dns_reply_len, c->namebuff, c->hash_key);
+    udp_request = lookup_request(c, id, hash);
     if (udp_request == NULL) {
         logger(LOG_ERR, "Received a reply that doesn't match any active query");
         return;
