@@ -247,12 +247,16 @@ self_serve_cert_file(struct context *c, struct dns_header *header,
         GETSHORT(qtype, p);
         if (qtype == T_TXT && strcasecmp(c->provider_name, c->namebuff) == 0) {
             // reply with signed certificate
-            size_t size = 1 + sizeof(struct SignedCert);
-            uint8_t *txt = malloc(size);
-            if (!txt)
-                return -1;
-            *txt = sizeof(struct SignedCert);
-            memcpy(txt + 1, &c->signed_cert, sizeof(struct SignedCert));
+            const size_t size = 1 + sizeof(struct SignedCert);
+            static uint8_t *txt;
+
+            if (!txt) {
+                txt = malloc(size);
+                if (!txt)
+                    return -1;
+                *txt = sizeof(struct SignedCert);
+                memcpy(txt + 1, &c->signed_cert, sizeof(struct SignedCert));
+            }
             if (add_resource_record
                 (header, nameoffset, &ansp, 0, NULL, T_TXT, C_IN, "t", size,
                  txt)) {
