@@ -215,7 +215,7 @@ timeout_timer_cb(evutil_socket_t timeout_timer_handle, short ev_flags,
 
     (void)ev_flags;
     (void)timeout_timer_handle;
-    logger(LOG_WARNING, "resolver timeout (UDP)");
+    logger(LOG_DEBUG, "resolver timeout (UDP)");
     udp_request_kill(udp_request);
 }
 
@@ -461,7 +461,7 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
     }
     udp_request = lookup_request(c, id, hash);
     if (udp_request == NULL) {
-        logger(LOG_ERR, "Received a reply that doesn't match any active query");
+        logger(LOG_DEBUG, "Received a reply that doesn't match any active query");
         return;
     }
     size_t max_reply_size = DNS_MAX_PACKET_SIZE_UDP;
