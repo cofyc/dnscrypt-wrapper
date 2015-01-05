@@ -58,7 +58,7 @@ timeout_timer_cb(evutil_socket_t timeout_timer_handle, short ev_flags,
 
     (void)ev_flags;
     (void)timeout_timer_handle;
-    logger(LOG_WARNING, "resolver timeout (TCP)");
+    logger(LOG_DEBUG, "resolver timeout (TCP)");
     tcp_request_kill(tcp_request);
 }
 
