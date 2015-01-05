@@ -350,7 +350,10 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     }
 
     udp_request->id = ntohs(header->id);
-    udp_request->hash = questions_hash(header, dns_query_len, c->namebuff, c->hash_key);
+    if (questions_hash(&udp_request->hash, header, dns_query_len, c->namebuff, c->hash_key) != 0) {
+        logger(LOG_WARNING, "Received a suspicious query from the client");
+        udp_request_kill(udp_request);
+    }
 
     udp_request->timeout_timer =
         evtimer_new(udp_request->context->event_loop, timeout_timer_cb,
@@ -374,7 +377,6 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
 
 /*
  * Find corresponding request by DNS id and hash of questions.
- * Don't check hash if not know (0xffffffffffffffff).
  */
 static UDPRequest *
 lookup_request(struct context *c, uint16_t id, uint64_t hash)
@@ -382,7 +384,7 @@ lookup_request(struct context *c, uint16_t id, uint64_t hash)
     UDPRequest *scanned_udp_request;
     TAILQ_FOREACH(scanned_udp_request, &c->udp_request_queue, queue) {
         if (id == scanned_udp_request->id
-            && (scanned_udp_request->hash == hash || hash == 0xffffffffffffffffULL)) {
+            && scanned_udp_request->hash == hash) {
             return scanned_udp_request;
         }
     }
@@ -425,7 +427,11 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
 
     struct dns_header *header = (struct dns_header *)dns_reply;
     uint16_t id = ntohs(header->id);
-    uint64_t hash = questions_hash(header, dns_reply_len, c->namebuff, c->hash_key);
+    uint64_t hash;
+    if (questions_hash(&hash, header, dns_reply_len, c->namebuff, c->hash_key) != 0) {
+        logger(LOG_ERR, "Received an invalid response from the server");
+        return;
+    }
     udp_request = lookup_request(c, id, hash);
     if (udp_request == NULL) {
         logger(LOG_ERR, "Received a reply that doesn't match any active query");
