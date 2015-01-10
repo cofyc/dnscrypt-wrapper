@@ -316,6 +316,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     udp_request->timeout_timer = NULL;
     udp_request->client_proxy_handle = client_proxy_handle;
     udp_request->client_sockaddr_len = sizeof(udp_request->client_sockaddr);
+    memset(&udp_request->status, 0, sizeof(udp_request->status));
     nread = recvfrom(client_proxy_handle,
                      (void *)dns_query,
                      sizeof(dns_query),
@@ -332,11 +333,10 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
 
     if (nread < (ssize_t) DNS_HEADER_SIZE || nread > sizeof(dns_query)) {
         logger(LOG_WARNING, "Short query received");
-        free(udp_request);
+        udp_request_kill(udp_request);
         return;
     }
 
-    memset(&udp_request->status, 0, sizeof(udp_request->status));
     dns_query_len = (size_t) nread;
     assert(dns_query_len <= sizeof(dns_query));
 
@@ -353,7 +353,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
             (c, udp_request->client_nonce, udp_request->nmkey, dns_query,
              &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
-            free(udp_request);
+            udp_request_kill(udp_request);
             return;
         }
         udp_request->is_dnscrypted = true;
@@ -364,11 +364,15 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     struct dns_header *header = (struct dns_header *)dns_query;
 
     // self serve signed certficate for provider name?
-    if (!udp_request->is_dnscrypted && c->provider_cert_file && c->provider_name) {
+    if (!udp_request->is_dnscrypted) {
         if (self_serve_cert_file(c, header, dns_query_len, udp_request) == 0)
             return;
+        if (!c->allow_not_dnscrypted) {
+            logger(LOG_DEBUG, "Unauthenticated query received over UDP");
+            udp_request_kill(udp_request);
+            return;
+        }
     }
-
     udp_request->id = ntohs(header->id);
     if (questions_hash(&udp_request->hash, header, dns_query_len, c->namebuff, c->hash_key) != 0) {
         logger(LOG_WARNING, "Received a suspicious query from the client");

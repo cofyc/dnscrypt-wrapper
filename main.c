@@ -202,6 +202,8 @@ main(int argc, const char **argv)
         OPT_BOOLEAN('d', "daemonize", &c.daemonize,
                     "run as daemon (default: off)"),
         OPT_STRING('p', "pidfile", &c.pidfile, "pid stored file"),
+        OPT_BOOLEAN('u', "unauthenticated", &c.allow_not_dnscrypted,
+                    "allow and forward unauthenticated queries (default: off)"),
         OPT_BOOLEAN('V', "verbose", &verbose,
                     "show verbose logs (specify more -VVV to increase verbosity)"),
         OPT_STRING('l', "logfile", &c.logfile,

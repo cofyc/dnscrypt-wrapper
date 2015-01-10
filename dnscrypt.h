@@ -110,6 +110,7 @@ struct context {
 
     /* Process stuff. */
     bool daemonize;
+    bool allow_not_dnscrypted;
     char *pidfile;
     char *user;
     uid_t user_id;

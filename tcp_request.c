@@ -158,6 +158,10 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
             return;
         }
         tcp_request->is_dnscrypted = true;
+    } else if (!c->allow_not_dnscrypted) {
+        logger(LOG_DEBUG, "Unauthenticated query received over TCP");
+        tcp_request_kill(tcp_request);
+        return;
     } else {
         tcp_request->is_dnscrypted = false;
     }
