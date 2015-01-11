@@ -79,6 +79,26 @@ Optional, add `-d/--daemonize` flag to run as daemon.
 
 Run `./dnscrypt-wrapper -h` to view command line options.
 
+Running unauthenticated DNS and the dnscrypt service on the same port
+=====================================================================
+
+By default, and with the exception of records used for the
+certificates, only queries using the DNSCrypt protocol will be
+accepted.
+
+If you want to run a service only accessible using DNSCrypt, this is
+what you want.
+
+If you want to run a service accessible both with and without
+DNSCrypt, what you usually want is to keep the standard DNS port for
+the unauthenticated DNS service (53), and use a different port for
+DNSCrypt. You don't have to change anything for this either.
+
+However, if you want to run both on the same port, maybe because only
+port 53 is reachable on your server, you can add the `-U`
+(`--unauthenticated`) switch to the command-line. This is not
+recommended.
+
 See also
 ========
     
