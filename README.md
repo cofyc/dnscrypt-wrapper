@@ -40,6 +40,10 @@ On OpenBSD:
     $ pkg_add -r gmake autoconf
     $ pkg_add -r libevent
     $ gmake LDFLAGS='-L/usr/local/lib/' CFLAGS=-I/usr/local/include/
+    
+On MacOS:
+
+    $ brew install dnscrypt-wrapper # best recommended
 
 Usage
 =====
