@@ -29,6 +29,14 @@ static int sendto_with_retry(SendtoWithRetryCtx *const ctx);
 # define SO_SNDBUFFORCE SO_SNDBUF
 #endif
 
+#ifndef EVUTIL_ERR_RW_RETRIABLE
+# ifndef _WIN32
+#  define EVUTIL_ERR_RW_RETRIABLE(e) ((e) == EINTR || (e) == EAGAIN)
+# else
+#  define EVUTIL_ERR_RW_RETRIABLE(e) ((e) == WSAEWOULDBLOCK || (e) == WSAEINTR)
+# endif
+#endif
+
 static int udp_request_cmp(const UDPRequest *r1, const UDPRequest *r2) {
     if (r1->hash < r2->hash) {
         return -1;
@@ -325,8 +333,10 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
                      &udp_request->client_sockaddr_len);
     if (nread < 0) {
         const int err = evutil_socket_geterror(client_proxy_handle);
-        logger(LOG_WARNING, "recvfrom(client): [%s]",
-               evutil_socket_error_to_string(err));
+        if (!EVUTIL_ERR_RW_RETRIABLE(err)) {
+            logger(LOG_WARNING, "recvfrom(client): [%s]",
+                   evutil_socket_error_to_string(err));
+        }
         udp_request_kill(udp_request);
         return;
     }
@@ -448,8 +458,10 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
                      &resolver_sockaddr_len);
     if (nread < 0) {
         const int err = evutil_socket_geterror(proxy_resolver_handle);
-        logger(LOG_WARNING, "recvfrom(resolver): [%s]",
-               evutil_socket_error_to_string(err));
+        if (!EVUTIL_ERR_RW_RETRIABLE(err)) {
+            logger(LOG_WARNING, "recvfrom(resolver): [%s]",
+                   evutil_socket_error_to_string(err));
+        }
         return;
     }
     if (evutil_sockaddr_cmp((const struct sockaddr *)&resolver_sockaddr,
