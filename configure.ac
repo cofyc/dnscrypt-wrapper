@@ -56,8 +56,12 @@ AC_ARG_WITH(event,
 if test "$withval" != no; then
     AC_CHECK_LIB(event,event_base_new,
         [LIBS="-levent $LIBS"],
-        [AC_MSG_ERROR([event is required - see http://libevent.org/])]
+        [AC_MSG_ERROR([libevent2 is required - see http://libevent.org/])]
     )   
+    AC_CHECK_HEADERS(event2/event.h,
+        [LIBS="-levent $LIBS"],
+        [AC_MSG_ERROR([libevent2 is required - see http://libevent.org/])]
+    )
 fi
 
 # libsodium
