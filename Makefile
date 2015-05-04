@@ -39,10 +39,11 @@ ALL_LDFLAGS = $(LDFLAGS) $(BASIC_LDFLAGS)
 
 prefix = /usr/local
 bindir = $(prefix)/bin
+sbindir = $(prefix)/sbin
 sharedir = $(prefix)/share
 mandir = share/man
 infodir = share/info
-export prefix bindir sharedir
+export prefix bindir sbindir sharedir
 
 CC = cc
 RM = rm -rf
@@ -193,11 +194,11 @@ version.h: FORCE
 	@./gen-version.sh
 
 install: all
-	$(INSTALL) -d -m 755 '$(bindir)'
-	$(INSTALL) -p dnscrypt-wrapper '$(bindir)'
+	$(INSTALL) -d -m 755 '$(sbindir)'
+	$(INSTALL) -p dnscrypt-wrapper '$(sbindir)'
 
 uninstall:
-	$(RM) $(bindir)/dnscrypt-wrapper
+	$(RM) $(sbindir)/dnscrypt-wrapper
 
 clean:
 	$(RM) dnscrypt-wrapper
