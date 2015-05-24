@@ -37,7 +37,11 @@ STRIP ?= strip
 ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS)
 ALL_LDFLAGS = $(LDFLAGS) $(BASIC_LDFLAGS)
 
-prefix = /usr/local
+ifdef PREFIX
+	prefix = $(PREFIX)
+else
+	prefix = /usr/local
+endif
 bindir = $(prefix)/bin
 sbindir = $(prefix)/sbin
 sharedir = $(prefix)/share
