@@ -27,9 +27,9 @@ tcp_request_kill(TCPRequest *const tcp_request)
     }
     c = tcp_request->context;
     if (tcp_request->status.is_in_queue != 0) {
-        theAssert(!TAILQ_EMPTY(&c->tcp_request_queue));
+        debug_assert(!TAILQ_EMPTY(&c->tcp_request_queue));
         TAILQ_REMOVE(&c->tcp_request_queue, tcp_request, queue);
-        theAssert(c->connections > 0U);
+        debug_assert(c->connections > 0U);
         c->connections--;
     }
     tcp_request->context = NULL;
@@ -88,13 +88,13 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     size_t max_query_size;
 
     if (tcp_request->status.has_dns_query_len == 0) {
-        theAssert(evbuffer_get_length(input) >= (size_t) 2U);
+        debug_assert(evbuffer_get_length(input) >= (size_t) 2U);
         evbuffer_remove(input, dns_query_len_buf, sizeof dns_query_len_buf);
         tcp_request->dns_query_len = (size_t)
             ((dns_query_len_buf[0] << 8) | dns_query_len_buf[1]);
         tcp_request->status.has_dns_query_len = 1;
     }
-    theAssert(tcp_request->status.has_dns_query_len != 0);
+    debug_assert(tcp_request->status.has_dns_query_len != 0);
     dns_query_len = tcp_request->dns_query_len;
     if (dns_query_len < (size_t) DNS_HEADER_SIZE) {
         logger(LOG_WARNING, "Short query received");
@@ -107,9 +107,9 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
                                  EV_READ, dns_query_len, dns_query_len);
         return;
     }
-    theAssert(available_size >= dns_query_len);
+    debug_assert(available_size >= dns_query_len);
     bufferevent_disable(tcp_request->client_proxy_bev, EV_READ);
-    theAssert(tcp_request->proxy_resolver_query_evbuf == NULL);
+    debug_assert(tcp_request->proxy_resolver_query_evbuf == NULL);
     if ((tcp_request->proxy_resolver_query_evbuf = evbuffer_new()) == NULL) {
         tcp_request_kill(tcp_request);
         return;
@@ -120,7 +120,7 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
         tcp_request_kill(tcp_request);
         return;
     }
-    theAssert(dns_query_len <= sizeof dns_query);
+    debug_assert(dns_query_len <= sizeof dns_query);
     if ((ssize_t) evbuffer_remove(tcp_request->proxy_resolver_query_evbuf,
                                   dns_query, dns_query_len)
         != (ssize_t) dns_query_len) {
@@ -128,8 +128,8 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
         return;
     }
     max_query_size = sizeof dns_query;
-    theAssert(max_query_size < DNS_MAX_PACKET_SIZE_TCP);
-    theAssert(SIZE_MAX - DNSCRYPT_MAX_PADDING - DNSCRYPT_QUERY_HEADER_SIZE
+    debug_assert(max_query_size < DNS_MAX_PACKET_SIZE_TCP);
+    debug_assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - DNSCRYPT_QUERY_HEADER_SIZE
               > dns_query_len);
     size_t max_len =
         dns_query_len + DNSCRYPT_MAX_PADDING + DNSCRYPT_QUERY_HEADER_SIZE;
@@ -140,9 +140,9 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
         tcp_request_kill(tcp_request);
         return;
     }
-    theAssert(max_len <= DNS_MAX_PACKET_SIZE_TCP - 2U);
-    theAssert(max_len <= sizeof dns_query);
-    theAssert(dns_query_len <= max_len);
+    debug_assert(max_len <= DNS_MAX_PACKET_SIZE_TCP - 2U);
+    debug_assert(max_len <= sizeof dns_query);
+    debug_assert(dns_query_len <= max_len);
 
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header =
@@ -233,13 +233,13 @@ resolver_proxy_read_cb(struct bufferevent *const proxy_resolver_bev,
 
     logger(LOG_DEBUG, "Resolver read callback.");
     if (tcp_request->status.has_dns_reply_len == 0) {
-        theAssert(evbuffer_get_length(input) >= (size_t) 2U);
+        debug_assert(evbuffer_get_length(input) >= (size_t) 2U);
         evbuffer_remove(input, dns_reply_len_buf, sizeof dns_reply_len_buf);
         tcp_request->dns_reply_len = (size_t)
             ((dns_reply_len_buf[0] << 8) | dns_reply_len_buf[1]);
         tcp_request->status.has_dns_reply_len = 1;
     }
-    theAssert(tcp_request->status.has_dns_reply_len != 0);
+    debug_assert(tcp_request->status.has_dns_reply_len != 0);
     dns_reply_len = tcp_request->dns_reply_len;
     if (dns_reply_len < (size_t) DNS_HEADER_SIZE) {
         logger(LOG_WARNING, "Short reply received");
@@ -252,7 +252,7 @@ resolver_proxy_read_cb(struct bufferevent *const proxy_resolver_bev,
                                  EV_READ, dns_reply_len, dns_reply_len);
         return;
     }
-    theAssert(available_size >= dns_reply_len);
+    debug_assert(available_size >= dns_reply_len);
     dns_reply_bev = evbuffer_pullup(input, (ssize_t) dns_reply_len);
     if (dns_reply_bev == NULL) {
         tcp_request_kill(tcp_request);
@@ -400,7 +400,7 @@ tcp_accept_error_cb(struct evconnlistener *const tcp_conn_listener,
 int
 tcp_listener_bind(struct context *c)
 {
-    theAssert(c->tcp_conn_listener == NULL);
+    debug_assert(c->tcp_conn_listener == NULL);
 #ifndef LEV_OPT_DEFERRED_ACCEPT
 # define LEV_OPT_DEFERRED_ACCEPT 0
 #endif
@@ -446,7 +446,7 @@ tcp_listener_bind(struct context *c)
 int
 tcp_listener_start(struct context *c)
 {
-    theAssert(c->tcp_conn_listener != NULL);
+    debug_assert(c->tcp_conn_listener != NULL);
     if (evconnlistener_enable(c->tcp_conn_listener) != 0) {
         return -1;
     }
