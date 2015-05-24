@@ -43,4 +43,19 @@
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[1]))
 #define COMPILER_ASSERT(X) (void) sizeof(char[(X) ? 1 : -1])
 
+/* Test for backtrace() */
+#if defined(__APPLE__) || defined(__linux__)
+#define HAVE_BACKTRACE 1
+#endif
+
+#if defined(__linux__) || defined(__OpenBSD__)
+#define _XOPEN_SOURCE 700
+/*
+ *  * On NetBSD, _XOPEN_SOURCE undefines _NETBSD_SOURCE and
+ *   * thus hides inet_aton etc.
+ *    */
+#elif !defined(__NetBSD__)
+#define _XOPEN_SOURCE
+#endif
+
 #endif

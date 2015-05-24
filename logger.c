@@ -1,34 +1,33 @@
 #include "logger.h"
-#include "compat.h"
 
-int logger_verbosity = LOG_DEBUG;
+int logger_verbosity = LOG_INFO;
 char *logger_logfile = NULL;
+int logger_fd = -1;
 
-// prioritynames (from <syslog.h>)
-#define	INTERNAL_NOPRI	0x10    /* the "no priority" priority */
+#define LOGGER_LINESIZE 1024
+
+// priority names (from <syslog.h>)
+#define INTERNAL_NOPRI 0x10     /* the "no priority" priority */
 typedef struct _code {
     const char *c_name;
     int c_val;
 } CODE;
 
 CODE prioritynames[] = {
-    {"alert", LOG_ALERT,},
-    {"crit", LOG_CRIT,},
-    {"debug", LOG_DEBUG,},
-    {"emerg", LOG_EMERG,},
-    {"err", LOG_ERR,},
-    {"error", LOG_ERR,},        /* DEPRECATED */
-    {"info", LOG_INFO,},
-    {"none", INTERNAL_NOPRI,},  /* INTERNAL */
-    {"notice", LOG_NOTICE,},
-    {"panic", LOG_EMERG,},      /* DEPRECATED */
-    {"warn", LOG_WARNING,},     /* DEPRECATED */
-    {"warning", LOG_WARNING,},
-    {NULL, -1,}
+    {"emerg", LOG_EMERG},
+    {"alert", LOG_ALERT},
+    {"crit", LOG_CRIT},
+    {"err", LOG_ERR},
+    {"warning", LOG_WARNING},
+    {"notice", LOG_NOTICE},
+    {"info", LOG_INFO},
+    {"debug", LOG_DEBUG},
+    {"none", INTERNAL_NOPRI},   /* INTERNAL */
+    {NULL, -1}
 };
 
 void
-logger(int priority, const char *fmt, ...)
+_logger(int priority, const char *fmt, ...)
 {
     va_list ap;
     char msg[LOGGER_MAXLEN];
@@ -43,7 +42,26 @@ logger(int priority, const char *fmt, ...)
     logger_lograw(priority, msg);
 }
 
-/* 
+void
+_logger_with_fileline(int priority, const char *fmt, const char *file, int line,
+                      ...)
+{
+    va_list ap;
+    char msg[LOGGER_MAXLEN];
+
+    if (priority > logger_verbosity)
+        return;
+
+    size_t n = snprintf(msg, sizeof(msg), "[%s:%d] ", file, line);
+
+    va_start(ap, line);
+    vsnprintf(msg + n, sizeof(msg), fmt, ap);
+    va_end(ap);
+
+    logger_lograw(priority, msg);
+}
+
+/*
  * Low-level logging. It's only used when you want to log arbitrary length message.
  */
 void
@@ -59,6 +77,12 @@ logger_lograw(int priority, const char *msg)
     if (priority < 0 || priority > LOG_PRIMASK)
         priority = INTERNAL_NOPRI;
 
+    if (logger_fd < 0) {
+        logger_reopen();
+    }
+    if (logger_fd < 0) {
+        return;
+    }
     fp = (logger_logfile == NULL) ? stdout : fopen(logger_logfile, "a");
     if (!fp)
         return;
@@ -69,16 +93,38 @@ logger_lograw(int priority, const char *msg)
             priority_flag = c.c_name;
         }
     }
+    assert(priority_flag);
 
+    // prefix
     int off;
     struct timeval tv;
     gettimeofday(&tv, NULL);
     char buf[64];
     off = strftime(buf, sizeof(buf), "%d %b %H:%M:%S.", localtime(&tv.tv_sec));
     snprintf(buf + off, sizeof(buf) - off, "%03d", (int)tv.tv_usec / 1000);
-    fprintf(fp, "[%d] %s [%s] %s\n", (int)getpid(), buf, priority_flag, msg);
-    fflush(fp);
+    // format log
+    char logbuf[LOGGER_LINESIZE];
+    size_t len = snprintf(logbuf, LOGGER_LINESIZE, "[%d] %s [%s] %s\n",
+                          (int)getpid(), buf, priority_flag, msg);
+    // write
+    write(logger_fd, logbuf, len);
+}
 
-    if (logger_logfile)
-        fclose(fp);
+void
+logger_reopen(void)
+{
+    if (logger_logfile) {
+        logger_fd = open(logger_logfile, O_APPEND | O_CREAT | O_WRONLY, 0644);
+    } else {
+        logger_fd = STDOUT_FILENO;
+    }
+}
+
+void
+logger_close(void)
+{
+    if (logger_fd >= 0) {
+        close(logger_fd);
+    }
+    logger_fd = -1;
 }

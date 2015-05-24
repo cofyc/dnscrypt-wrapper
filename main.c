@@ -235,6 +235,8 @@ main(int argc, const char **argv)
         return 1;
     }
 
+    debug_init();
+
     if (gen_provider_keypair) {
         uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
         uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];

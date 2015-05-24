@@ -7,7 +7,7 @@ all::
 
 ### Defaults
 
-BASIC_CFLAGS = -O2 -std=c99 -pedantic -Wall -I./argparse
+BASIC_CFLAGS = -O2 -std=c99 -Wall -I./argparse
 BASIC_LDFLAGS = -lm -lsodium
 
 # Guard against environment variables
@@ -86,6 +86,7 @@ LIB_OBJS += rfc1035.o
 LIB_OBJS += safe_rw.o
 LIB_OBJS += cert.o
 LIB_OBJS += pidfile.o
+LIB_OBJS += debug.o
 
 DEP_LIBS += argparse/libargparse.a
 
