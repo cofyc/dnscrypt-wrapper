@@ -106,7 +106,7 @@ recommended.
 中文文档
 ========
 
-- CentOS 下编译 dnscrypt-wrapper: http://03k.org/centos-make-dnscrypt-wrapper.html
+- CentOS/Debian/Ubuntu 下编译 dnscrypt-wrapper: http://03k.org/centos-make-dnscrypt-wrapper.html
 - dnscrypt-wrapper 使用方法: http://03k.org/dnscrypt-wrapper-usage.html 
 
 See also
