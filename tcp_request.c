@@ -415,7 +415,7 @@ tcp_listener_bind(struct context *c)
     evutil_make_socket_nonblocking(fd);
 
     if (bind(fd, (struct sockaddr *) &c->local_sockaddr, c->local_sockaddr_len) < 0) {
-        logger(LOG_ERR, "Unable to bind (TCP): %s");
+        logger(LOG_ERR, "Unable to bind (TCP): %s", c->listen_address);
         return -1;
     }
 
