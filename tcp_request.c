@@ -150,6 +150,9 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     debug_assert(sizeof c->crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
     if (memcmp
         (dnscrypt_header->magic_query, c->crypt_publickey,
+         DNSCRYPT_MAGIC_HEADER_LEN) == 0
+        && memcmp
+        (dnscrypt_header->magic_query, CERT_OLD_MAGIC_HEADER,
          DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
         if (dnscrypt_server_uncurve
             (c, tcp_request->client_nonce, tcp_request->nmkey, dns_query,
