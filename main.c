@@ -211,21 +211,21 @@ main(int argc, const char **argv)
         OPT_BOOLEAN(0, "gen-provider-keypair", &gen_provider_keypair,
                     "generate provider key pair"),
         OPT_STRING(0, "crypt-publickey-file", &c.crypt_publickey_file,
-                   "crypt public key file"),
+                   "crypt public key file (default: ./crypt_public.key)"),
         OPT_STRING(0, "crypt-secretkey-file", &c.crypt_secretkey_file,
-                   "crypt secret key file"),
+                   "crypt secret key file (default: ./crypt_secret.key)"),
         OPT_BOOLEAN(0, "gen-crypt-keypair", &gen_crypt_keypair,
                     "generate crypt key pair"),
         OPT_STRING(0, "provider-publickey-file", &c.provider_publickey_file,
-                   "provider public key file"),
+                   "provider public key file (default: ./public.key)"),
         OPT_STRING(0, "provider-secretkey-file", &c.provider_secretkey_file,
-                   "provider secret key file"),
+                   "provider secret key file (default: ./secret.key)"),
         OPT_BOOLEAN(0, "gen-cert-file", &gen_cert_file,
                     "generate pre-signed certificate"),
         OPT_INTEGER(0, "cert-file-expire-days", &cert_file_expire_days, "cert file expire days (default: 365)"),
         OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
         OPT_STRING(0, "provider-cert-file", &c.provider_cert_file,
-                   "use this to self-serve cert file"),
+                   "certificate file (default: ./dnscrypt.cert)"),
         OPT_END(),
     };
 
@@ -236,6 +236,24 @@ main(int argc, const char **argv)
     }
 
     debug_init();
+
+    if (!c.listen_address)
+        c.listen_address = "0.0.0.0:53";
+
+    if (!c.crypt_publickey_file)
+        c.crypt_publickey_file = "crypt_public.key";
+
+    if (!c.crypt_secretkey_file)
+        c.crypt_secretkey_file = "crypt_secret.key";
+
+    if (!c.provider_publickey_file)
+        c.provider_publickey_file = "public.key";
+
+    if (!c.provider_secretkey_file)
+        c.provider_secretkey_file = "secret.key";
+
+    if (!c.provider_cert_file)
+        c.provider_cert_file = "dnscrypt.cert";
 
     if (gen_provider_keypair) {
         uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
@@ -254,13 +272,24 @@ main(int argc, const char **argv)
                    "                     --resolver-address=2.dnscrypt-cert...)\n",
                    fingerprint);
             if (write_to_file
-                ("public.key", (char *)provider_publickey,
+                (c.provider_publickey_file, (char *)provider_publickey,
                  crypto_sign_ed25519_PUBLICKEYBYTES) == 0
-                && write_to_file("secret.key", (char *)provider_secretkey,
+                && write_to_file(c.provider_secretkey_file, (char *)provider_secretkey,
                                  crypto_sign_ed25519_SECRETKEYBYTES) == 0) {
-                printf("Keys are stored in public.key & secret.key.\n");
+                printf("Keys are stored in %s & %s.\n",
+                       c.provider_publickey_file, c.provider_secretkey_file);
                 exit(0);
             }
+            printf("\n\n*KEYS HAVE NOT BEEN SAVED*\n\nA provider key pair already exists.\n"
+                   "If you really want to overwrite it, delete the %s and %s files.\n\n"
+                   "The provider public key is what client give to dnscrypt-proxy\n"
+                   "in order to use your service (long-term key).\n\n"
+                   "Unless the private key has been compromised, you probably do not\n"
+                   "want to overwrite it with a new one.\n\n"
+                   "Usually, what you want (if current certificates are about to expire)\n"
+                   "to regenerate is the server key pairs (--gen-crypt-keypair),\n"
+                   "not the master keys.\n",
+                   c.provider_publickey_file, c.provider_secretkey_file);
             exit(1);
         } else {
             printf(" failed.\n");
@@ -276,12 +305,12 @@ main(int argc, const char **argv)
         if (crypto_box_keypair(crypt_publickey, crypt_secretkey) == 0) {
             printf(" ok.\n");
             if (write_to_file
-                ("crypt_public.key", (char *)crypt_publickey,
+                (c.crypt_publickey_file, (char *)crypt_publickey,
                  crypto_box_PUBLICKEYBYTES) == 0
-                && write_to_file("crypt_secret.key", (char *)crypt_secretkey,
+                && write_to_file(c.crypt_secretkey_file, (char *)crypt_secretkey,
                                  crypto_box_SECRETKEYBYTES) == 0) {
-                printf
-                    ("Keys are stored in crypt_public.key & crypt_secret.key.\n");
+                printf("Keys are stored in %s & %s.\n",
+                       c.crypt_publickey_file, c.crypt_secretkey_file);
                 exit(0);
             }
             exit(1);
@@ -299,12 +328,6 @@ main(int argc, const char **argv)
     if (logger_verbosity > LOG_DEBUG)
         logger_verbosity = LOG_DEBUG;
 
-    // crypt public & secret key
-    if (!c.crypt_publickey_file || !c.crypt_secretkey_file) {
-        logger(LOG_ERR,
-               "You must provide --crypt-publickey-file and --crypt-secretkey-file.");
-        exit(1);
-    }
     if (read_from_file
         (c.crypt_publickey_file, (char *)c.crypt_publickey,
          crypto_box_PUBLICKEYBYTES) != 0
@@ -320,12 +343,6 @@ main(int argc, const char **argv)
 
     // generate signed certificate
     if (gen_cert_file) {
-        // provider public & secret key
-        if (!c.provider_publickey_file || !c.provider_secretkey_file) {
-            logger(LOG_ERR,
-                   "You must provide --provider-publickey-file and --provider-secretkey-file.");
-            exit(1);
-        }
         if (read_from_file
             (c.provider_publickey_file, (char *)c.provider_publickey,
              crypto_sign_ed25519_PUBLICKEYBYTES) == 0
@@ -349,13 +366,14 @@ main(int argc, const char **argv)
         cert_display_txt_record_tinydns(signed_cert);
         printf("\n");
         if (!write_to_file
-            ("dnscrypt.cert", (char *)signed_cert,
+            (c.provider_cert_file, (char *)signed_cert,
              sizeof(struct SignedCert)) == 0) {
-            logger(LOG_NOTICE, "Writing to %s failed. (Maybe it exists now?)",
-                   "dnscrypt.cert");
+            logger(LOG_ERR, "The new certificate was not saved - "
+                   "Maybe the %s file already exists - please delete it first.",
+                   c.provider_cert_file);
             exit(1);
         }
-        logger(LOG_NOTICE, "Certificate stored in %s.", "dnscrypt.cert");
+        logger(LOG_NOTICE, "Certificate stored in %s.", c.provider_cert_file);
         exit(0);
     }
 
@@ -364,9 +382,6 @@ main(int argc, const char **argv)
         argparse_usage(&argparse);
         exit(0);
     }
-
-    if (!c.listen_address)
-        c.listen_address = "0.0.0.0:53";
 
     c.udp_listener_handle = -1;
     c.udp_resolver_handle = -1;
@@ -382,19 +397,16 @@ main(int argc, const char **argv)
         c.user_dir = strdup(pw->pw_dir);
     }
 
-    if (c.provider_cert_file) {
-        if (!c.provider_name) {
-            logger(LOG_ERR,
-                   "You must specify --provider-name with --provider-cert-file.");
-            exit(1);
-        }
-        if (read_from_file
-            (c.provider_cert_file, (char *)&c.signed_cert,
-             sizeof(struct SignedCert)) != 0) {
-            logger(LOG_ERR, "%s is not valid signed certficate.",
-                   c.provider_cert_file);
-            exit(1);
-        }
+    if (!c.provider_name) {
+        logger(LOG_ERR, "You must specify --provider-name");
+        exit(1);
+    }
+    if (read_from_file
+        (c.provider_cert_file, (char *)&c.signed_cert,
+            sizeof(struct SignedCert)) != 0) {
+        logger(LOG_ERR, "%s is not valid signed certficate.",
+               c.provider_cert_file);
+        exit(1);
     }
 
     if (c.daemonize) {
