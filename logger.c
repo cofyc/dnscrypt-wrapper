@@ -77,10 +77,10 @@ logger_lograw(int priority, const char *msg)
     if (priority < 0 || priority > LOG_PRIMASK)
         priority = INTERNAL_NOPRI;
 
-    if (logger_fd < 0) {
+    if (logger_fd == -1) {
         logger_reopen();
     }
-    if (logger_fd < 0) {
+    if (logger_fd == -1) {
         return;
     }
     fp = (logger_logfile == NULL) ? stdout : fopen(logger_logfile, "a");
