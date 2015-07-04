@@ -61,11 +61,11 @@ Second, generate crypt keypair:
 Third, generate pre-signed certificate (use pre-generated key pairs):
 
     # stored in dnscrypt.cert in current directory
-    $ ./dnscrypt-wrapper --crypt-secretkey-file crypt_secret.key --crypt-publickey-file=crypt_public.key --provider-publickey-file=public.key --provider-secretkey-file=secret.key --gen-cert-file
+    $ ./dnscrypt-wrapper --gen-cert-file
 
 Run the program with pre-signed certificate:
 
-    $ ./dnscrypt-wrapper  -r 8.8.8.8:53 -a 0.0.0.0:443  --crypt-secretkey-file=crypt_secret.key --crypt-publickey-file=crypt_public.key --provider-cert-file=dnscrypt.cert --provider-name=2.dnscrypt-cert.yechengfu.com
+    $ ./dnscrypt-wrapper --resolver-address=114.114.114.114:53 --listen-address=0.0.0.0:443 --provider-name=2.dnscrypt-cert.yechengfu.com
 
 If you can store generated pre-signed certificate (binary string) in TXT record for your provider name, for example: 2.dnscrypt-cert.yourdomain.com. Then you can omit `--provider-cert-file` option. Name server will serve this binary certificate data for you.
 
