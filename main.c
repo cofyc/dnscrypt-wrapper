@@ -154,7 +154,7 @@ write_to_file(const char *path, char *buf, size_t count)
 {
     int fd;
     fd = open(path, O_WRONLY | O_CREAT, 0444);
-    if (fd < 0) {
+    if (fd == -1) {
         return -1;
     }
     if (safe_write(fd, buf, count, 3) != count) {
@@ -168,7 +168,7 @@ read_from_file(const char *path, char *buf, size_t count)
 {
     int fd;
     fd = open(path, O_RDONLY);
-    if (fd < 0) {
+    if (fd == -1) {
         return -1;
     }
     if (safe_read(fd, buf, count) != count) {
