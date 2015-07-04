@@ -15,7 +15,7 @@ cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days)
 
     memcpy(signed_cert->server_publickey, crypt_publickey,
            crypto_box_PUBLICKEYBYTES);
-    memcpy(signed_cert->magic_query, CERT_MAGIC_HEADER,
+    memcpy(signed_cert->magic_query, crypt_publickey,
            sizeof(signed_cert->magic_query));
     memcpy(signed_cert->serial, "0001", 4);
     uint32_t ts_begin = (uint32_t)time(NULL);
