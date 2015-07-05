@@ -73,7 +73,7 @@ without requiring clients to update their configuration.
 
 3) Run the program with a given key, a provider name and the most recent certificate:
 
-    $ dnscrypt-wrapper --resolver-address=114.114.114.114:53 --listen-address=0.0.0.0:443 \
+    # dnscrypt-wrapper --resolver-address=114.114.114.114:53 --listen-address=0.0.0.0:443 \
                        --provider-name=2.dnscrypt-cert.yechengfu.com \
                        --crypt-secretkey-file=1.key --provider-cert-file=1.cert
 
@@ -92,7 +92,7 @@ provider certificate.
 
 4) Run dnscrypt-proxy to check if it works:
 
-    $ dnscrypt-proxy --local-address=127.0.0.1:55 --resolver-address=127.0.0.1:443 \
+    # dnscrypt-proxy --local-address=127.0.0.1:55 --resolver-address=127.0.0.1:443 \
                      --provider-name=2.dnscrypt-cert.yechengfu.com \
                      --provider-key=<provider_public_key_fingerprint>
     $ dig -p 55 google.com @127.0.0.1
@@ -133,7 +133,7 @@ Time-limited keys are bound to expire.
 `dnscrypt-proxy` can check if the current key for a given server is
 not going to expire soon:
 
-    $ dnscrypt-proxy --local-address=127.0.0.1:55 --resolver-address=127.0.0.1:443 \
+    $ dnscrypt-proxy --resolver-address=127.0.0.1:443 \
                      --provider-name=2.dnscrypt-cert.yechengfu.com \
                      --provider-key=<provider_public_key_fingerprint> \
                      --test=10080
@@ -162,7 +162,7 @@ its certificate:
 2) Tell new users to use the new certificate but still accept the old
 key until all clients have loaded the new certificate:
 
-    $ dnscrypt-wrapper --resolver-address=114.114.114.114:53 --listen-address=0.0.0.0:443 \
+    # dnscrypt-wrapper --resolver-address=114.114.114.114:53 --listen-address=0.0.0.0:443 \
                        --provider-name=2.dnscrypt-cert.yechengfu.com \
                        --crypt-secretkey-file=1.key,2.key --provider-cert-file=2.cert
 
@@ -173,7 +173,7 @@ accept both the previous and the current key.
 after one hour, the old certificate can be refused, by leaving only
 the new one in the configuration:
 
-    $ dnscrypt-wrapper --resolver-address=114.114.114.114:53 --listen-address=0.0.0.0:443 \
+    # dnscrypt-wrapper --resolver-address=114.114.114.114:53 --listen-address=0.0.0.0:443 \
                        --provider-name=2.dnscrypt-cert.yechengfu.com \
                        --crypt-secretkey-file=2.key --provider-cert-file=2.cert
 
