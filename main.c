@@ -309,6 +309,9 @@ main(int argc, const char **argv)
                        c.crypt_secretkey_file);
                 exit(0);
             }
+            logger(LOG_ERR, "The new certificate was not saved - "
+                   "Maybe the %s file already exists - please delete it first.",
+                   c.crypt_secretkey_file);
             exit(1);
         } else {
             printf(" failed.\n");
