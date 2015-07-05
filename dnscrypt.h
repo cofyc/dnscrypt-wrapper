@@ -11,6 +11,12 @@
 #include <event2/util.h>
 #include <sodium.h>
 
+#if SODIUM_LIBRARY_VERSION_MAJOR < 7
+# define sodium_allocarray(C, S) calloc(C, S)
+# define sodium_malloc(S) malloc(S)
+# define sodium_free(P) free(P)
+#endif
+
 #define DNS_QUERY_TIMEOUT 10
 
 #define DNS_MAX_PACKET_SIZE_UDP_RECV (65536U - 20U - 8U)
