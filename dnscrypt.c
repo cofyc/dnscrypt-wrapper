@@ -183,7 +183,7 @@ dnscrypt_server_uncurve(struct context *c,
     struct dnscrypt_query_header *query_header =
         (struct dnscrypt_query_header *)buf;
     memcpy(nmkey, query_header->publickey, crypto_box_PUBLICKEYBYTES);
-    if (crypto_box_beforenm(nmkey, nmkey, c->crypt_secretkey) != 0) {
+    if (crypto_box_beforenm(nmkey, nmkey, c->keypair.crypt_secretkey) != 0) {
         return -1;
     }
 
@@ -263,7 +263,7 @@ dnscrypt_server_curve(struct context *c,
     len =
         dnscrypt_pad(boxed + crypto_box_MACBYTES, len,
                      max_len - DNSCRYPT_REPLY_HEADER_SIZE, nonce,
-                     c->crypt_secretkey);
+                     c->keypair.crypt_secretkey);
     memset(boxed - crypto_box_BOXZEROBYTES, 0, crypto_box_ZEROBYTES);
 
     // add server nonce extension

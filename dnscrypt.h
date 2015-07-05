@@ -87,6 +87,11 @@
 #define DNSCRYPT_REPLY_HEADER_SIZE \
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_HALF_NONCEBYTES * 2 + crypto_box_MACBYTES)
 
+typedef struct KeyPair_ {
+    uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
+    uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
+} KeyPair;
+
 struct context {
     struct sockaddr_storage local_sockaddr;
     struct sockaddr_storage resolver_sockaddr;
@@ -125,10 +130,8 @@ struct context {
     struct SignedCert signed_cert;
     uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
     uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
-    char *crypt_publickey_file;
     char *crypt_secretkey_file;
-    uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
-    uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
+    KeyPair keypair;
     uint64_t nonce_ts_last;
     unsigned char hash_key[crypto_shorthash_KEYBYTES];
 };

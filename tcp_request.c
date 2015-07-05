@@ -147,11 +147,11 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
-    debug_assert(sizeof c->crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
+    debug_assert(sizeof c->keypair.crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
     if (memcmp
-        (dnscrypt_header->magic_query, c->crypt_publickey,
+        (dnscrypt_header->magic_query, c->keypair.crypt_publickey,
          DNSCRYPT_MAGIC_HEADER_LEN) == 0
-        && memcmp
+        || memcmp
         (dnscrypt_header->magic_query, CERT_OLD_MAGIC_HEADER,
          DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
         if (dnscrypt_server_uncurve

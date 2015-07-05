@@ -196,8 +196,6 @@ main(int argc, const char **argv)
         OPT_BOOLEAN('d', "daemonize", &c.daemonize,
                     "run as daemon (default: off)"),
         OPT_INTEGER(0, "cert-file-expire-days", &cert_file_expire_days, "cert file expire days (default: 365)"),
-        OPT_STRING(0, "crypt-publickey-file", &c.crypt_publickey_file,
-                   "crypt public key file (default: ./crypt_public.key)"),
         OPT_STRING(0, "crypt-secretkey-file", &c.crypt_secretkey_file,
                    "crypt secret key file (default: ./crypt_secret.key)"),
         OPT_BOOLEAN(0, "gen-cert-file", &gen_cert_file,
@@ -239,9 +237,6 @@ main(int argc, const char **argv)
 
     if (!c.listen_address)
         c.listen_address = "0.0.0.0:53";
-
-    if (!c.crypt_publickey_file)
-        c.crypt_publickey_file = "crypt_public.key";
 
     if (!c.crypt_secretkey_file)
         c.crypt_secretkey_file = "crypt_secret.key";
@@ -298,19 +293,16 @@ main(int argc, const char **argv)
     }
 
     if (gen_crypt_keypair) {
-        uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
-        uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
         printf("Generate crypt key pair...");
         fflush(stdout);
-        if (crypto_box_keypair(crypt_publickey, crypt_secretkey) == 0) {
+        if (crypto_box_keypair(c.keypair.crypt_publickey,
+                               c.keypair.crypt_secretkey) == 0) {
             printf(" ok.\n");
-            if (write_to_file
-                (c.crypt_publickey_file, (char *)crypt_publickey,
-                 crypto_box_PUBLICKEYBYTES) == 0
-                && write_to_file(c.crypt_secretkey_file, (char *)crypt_secretkey,
-                                 crypto_box_SECRETKEYBYTES) == 0) {
-                printf("Keys are stored in %s & %s.\n",
-                       c.crypt_publickey_file, c.crypt_secretkey_file);
+            if (write_to_file(c.crypt_secretkey_file,
+                              (char *)c.keypair.crypt_secretkey,
+                              crypto_box_SECRETKEYBYTES) == 0) {
+                printf("Secret key stored in %s\n",
+                       c.crypt_secretkey_file);
                 exit(0);
             }
             exit(1);
@@ -328,18 +320,18 @@ main(int argc, const char **argv)
     if (logger_verbosity > LOG_DEBUG)
         logger_verbosity = LOG_DEBUG;
 
-    if (read_from_file
-        (c.crypt_publickey_file, (char *)c.crypt_publickey,
-         crypto_box_PUBLICKEYBYTES) != 0
-        || read_from_file(c.crypt_secretkey_file, (char *)c.crypt_secretkey,
-                          crypto_box_SECRETKEYBYTES) != 0) {
+    if (read_from_file(c.crypt_secretkey_file,
+                       (char *)c.keypair.crypt_secretkey,
+                       crypto_box_SECRETKEYBYTES) != 0) {
         exit(1);
     }
-    {
-        char fingerprint[80];
-        dnscrypt_key_to_fingerprint(fingerprint, c.crypt_publickey);
-        logger(LOG_INFO, "Crypt public key fingerprint: %s", fingerprint);
+    if (crypto_scalarmult_base(c.keypair.crypt_publickey,
+                               c.keypair.crypt_secretkey) != 0) {
+        exit(1);
     }
+    char fingerprint[80];
+    dnscrypt_key_to_fingerprint(fingerprint, c.keypair.crypt_publickey);
+    logger(LOG_INFO, "Crypt public key fingerprint: %s", fingerprint);
 
     // generate signed certificate
     if (gen_cert_file) {
@@ -353,7 +345,8 @@ main(int argc, const char **argv)
             exit(1);
         }
         logger(LOG_NOTICE, "Generating pre-signed certificate.");
-        struct SignedCert *signed_cert = cert_build_cert(c.crypt_publickey, cert_file_expire_days);
+        struct SignedCert *signed_cert =
+            cert_build_cert(c.keypair.crypt_publickey, cert_file_expire_days);
         if (!signed_cert || cert_sign(signed_cert, c.provider_secretkey) != 0) {
             logger(LOG_NOTICE, "Failed.");
             exit(1);
