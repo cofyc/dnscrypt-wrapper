@@ -53,9 +53,10 @@ First, generate provider keypair:
     # stored in public.key/secret.key in current directory
     $ ./dnscrypt-wrapper --gen-provider-keypair
 
-Second, generate crypt keypair:
+Second, generate crypt keypair and store the secret key (storing the
+public key is not required any more since version 0.1.17):
 
-    # stored in crypt_public.key/crypt_secret.key in current directory
+    # secret key stored in crypt_secret.key in current directory
     $ ./dnscrypt-wrapper --gen-crypt-keypair
 
 Third, generate pre-signed certificate (use pre-generated key pairs):
