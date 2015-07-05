@@ -356,10 +356,10 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
-    assert(sizeof c->keypair.crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
+    assert(sizeof c->keypairs->crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
 
     if (memcmp
-        (dnscrypt_header->magic_query, c->keypair.crypt_publickey,
+        (dnscrypt_header->magic_query, c->keypairs->crypt_publickey,
          DNSCRYPT_MAGIC_HEADER_LEN) == 0
         || memcmp
         (dnscrypt_header->magic_query, CERT_OLD_MAGIC_HEADER,

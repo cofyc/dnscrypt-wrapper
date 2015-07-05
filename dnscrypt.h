@@ -131,11 +131,14 @@ struct context {
     uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
     uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
     char *crypt_secretkey_file;
-    KeyPair keypair;
+    KeyPair *keypairs;
+    size_t keypairs_count;
     uint64_t nonce_ts_last;
     unsigned char hash_key[crypto_shorthash_KEYBYTES];
 };
 
+const KeyPair * find_keypair(const struct context *c,
+                             const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN]);
 int dnscrypt_cmp_client_nonce(const uint8_t
                               client_nonce[crypto_box_HALF_NONCEBYTES],
                               const uint8_t *const buf, const size_t len);

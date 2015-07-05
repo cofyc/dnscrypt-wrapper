@@ -1,5 +1,21 @@
 #include "dnscrypt.h"
 
+const KeyPair *
+find_keypair(const struct context *c,
+             const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN])
+{
+    const KeyPair *keypairs = c->keypairs;
+    size_t i;
+
+    for (i = 0U; i < c->keypairs_count; i++) {
+        if (memcmp(keypairs[i].crypt_publickey, magic_query,
+                   DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
+            return &keypairs[i];
+        }
+    }
+    return NULL;
+}
+
 int
 dnscrypt_cmp_client_nonce(const uint8_t
                           client_nonce[crypto_box_HALF_NONCEBYTES],
@@ -183,7 +199,7 @@ dnscrypt_server_uncurve(struct context *c,
     struct dnscrypt_query_header *query_header =
         (struct dnscrypt_query_header *)buf;
     memcpy(nmkey, query_header->publickey, crypto_box_PUBLICKEYBYTES);
-    if (crypto_box_beforenm(nmkey, nmkey, c->keypair.crypt_secretkey) != 0) {
+    if (crypto_box_beforenm(nmkey, nmkey, c->keypairs->crypt_secretkey) != 0) {
         return -1;
     }
 
@@ -263,7 +279,7 @@ dnscrypt_server_curve(struct context *c,
     len =
         dnscrypt_pad(boxed + crypto_box_MACBYTES, len,
                      max_len - DNSCRYPT_REPLY_HEADER_SIZE, nonce,
-                     c->keypair.crypt_secretkey);
+                     c->keypairs->crypt_secretkey);
     memset(boxed - crypto_box_BOXZEROBYTES, 0, crypto_box_ZEROBYTES);
 
     // add server nonce extension
