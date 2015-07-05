@@ -11,6 +11,12 @@
 #include <event2/util.h>
 #include <sodium.h>
 
+#if SODIUM_LIBRARY_VERSION_MAJOR < 7
+# define sodium_allocarray(C, S) calloc(C, S)
+# define sodium_malloc(S) malloc(S)
+# define sodium_free(P) free(P)
+#endif
+
 #define DNS_QUERY_TIMEOUT 10
 
 #define DNS_MAX_PACKET_SIZE_UDP_RECV (65536U - 20U - 8U)
@@ -131,11 +137,15 @@ struct context {
     uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
     uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
     char *crypt_secretkey_file;
-    KeyPair keypair;
+    KeyPair *keypairs;
+    size_t keypairs_count;
     uint64_t nonce_ts_last;
     unsigned char hash_key[crypto_shorthash_KEYBYTES];
 };
 
+const KeyPair * find_keypair(const struct context *c,
+                             const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
+                             const size_t dns_query_len);
 int dnscrypt_cmp_client_nonce(const uint8_t
                               client_nonce[crypto_box_HALF_NONCEBYTES],
                               const uint8_t *const buf, const size_t len);
@@ -192,7 +202,7 @@ struct dnscrypt_query_header {
     uint8_t mac[crypto_box_MACBYTES];
 };
 
-int dnscrypt_server_uncurve(struct context *c,
+int dnscrypt_server_uncurve(struct context *c, const KeyPair *keypair,
                             uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                             uint8_t nmkey[crypto_box_BEFORENMBYTES],
                             uint8_t *const buf, size_t * const lenp);

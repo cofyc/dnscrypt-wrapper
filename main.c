@@ -250,6 +250,8 @@ main(int argc, const char **argv)
     if (!c.provider_cert_file)
         c.provider_cert_file = "dnscrypt.cert";
 
+    c.keypairs = NULL;
+
     if (gen_provider_keypair) {
         uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
         uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
@@ -295,16 +297,21 @@ main(int argc, const char **argv)
     if (gen_crypt_keypair) {
         printf("Generate crypt key pair...");
         fflush(stdout);
-        if (crypto_box_keypair(c.keypair.crypt_publickey,
-                               c.keypair.crypt_secretkey) == 0) {
+        if ((c.keypairs = sodium_malloc(sizeof *c.keypairs)) == NULL)
+            exit(1);
+        if (crypto_box_keypair(c.keypairs->crypt_publickey,
+                               c.keypairs->crypt_secretkey) == 0) {
             printf(" ok.\n");
             if (write_to_file(c.crypt_secretkey_file,
-                              (char *)c.keypair.crypt_secretkey,
+                              (char *)c.keypairs->crypt_secretkey,
                               crypto_box_SECRETKEYBYTES) == 0) {
                 printf("Secret key stored in %s\n",
                        c.crypt_secretkey_file);
                 exit(0);
             }
+            logger(LOG_ERR, "The new certificate was not saved - "
+                   "Maybe the %s file already exists - please delete it first.",
+                   c.crypt_secretkey_file);
             exit(1);
         } else {
             printf(" failed.\n");
@@ -320,21 +327,52 @@ main(int argc, const char **argv)
     if (logger_verbosity > LOG_DEBUG)
         logger_verbosity = LOG_DEBUG;
 
-    if (read_from_file(c.crypt_secretkey_file,
-                       (char *)c.keypair.crypt_secretkey,
-                       crypto_box_SECRETKEYBYTES) != 0) {
+    char *crypt_secretkey_files, *crypt_secretkey_file;
+    size_t keypair_id;
+
+    c.keypairs_count = 0U;
+    if ((crypt_secretkey_files = strdup(c.crypt_secretkey_file)) == NULL)
         exit(1);
+    for (crypt_secretkey_file = strtok(crypt_secretkey_files, ",");
+         crypt_secretkey_file != NULL;
+         crypt_secretkey_file = strtok(NULL, ",")) {
+        c.keypairs_count++;
     }
-    if (crypto_scalarmult_base(c.keypair.crypt_publickey,
-                               c.keypair.crypt_secretkey) != 0) {
-        exit(1);
+    if (c.keypairs_count <= 0U) {
+        logger(LOG_ERR, "You must specify --crypt-secretkey-file.\n\n");
+        argparse_usage(&argparse);
+        exit(0);
     }
-    char fingerprint[80];
-    dnscrypt_key_to_fingerprint(fingerprint, c.keypair.crypt_publickey);
-    logger(LOG_INFO, "Crypt public key fingerprint: %s", fingerprint);
+    memcpy(crypt_secretkey_files, c.crypt_secretkey_file, strlen(c.crypt_secretkey_file) + 1U);
+    c.keypairs = sodium_allocarray(c.keypairs_count, sizeof *c.keypairs);
+    keypair_id = 0U;
+    for (crypt_secretkey_file = strtok(crypt_secretkey_files, ",");
+         crypt_secretkey_file != NULL;
+         crypt_secretkey_file = strtok(NULL, ",")) {
+        char fingerprint[80];
+
+        if (read_from_file(crypt_secretkey_file,
+                           (char *)c.keypairs[keypair_id].crypt_secretkey,
+                           crypto_box_SECRETKEYBYTES) != 0) {
+            logger(LOG_ERR, "Unable to read %s", crypt_secretkey_file);
+            exit(1);
+        }
+        if (crypto_scalarmult_base(c.keypairs[keypair_id].crypt_publickey,
+                                   c.keypairs[keypair_id].crypt_secretkey) != 0)
+            exit(1);
+        dnscrypt_key_to_fingerprint(fingerprint, c.keypairs->crypt_publickey);
+        logger(LOG_INFO, "Crypt public key fingerprint for %s: %s",
+               crypt_secretkey_file, fingerprint);
+        keypair_id++;
+    }
+    free(crypt_secretkey_files);
 
     // generate signed certificate
     if (gen_cert_file) {
+        if (c.keypairs_count != 1U) {
+            logger(LOG_ERR, "A certificate can only store a single key");
+            exit(1);
+        }
         if (read_from_file
             (c.provider_publickey_file, (char *)c.provider_publickey,
              crypto_sign_ed25519_PUBLICKEYBYTES) == 0
@@ -346,7 +384,7 @@ main(int argc, const char **argv)
         }
         logger(LOG_NOTICE, "Generating pre-signed certificate.");
         struct SignedCert *signed_cert =
-            cert_build_cert(c.keypair.crypt_publickey, cert_file_expire_days);
+            cert_build_cert(c.keypairs->crypt_publickey, cert_file_expire_days);
         if (!signed_cert || cert_sign(signed_cert, c.provider_secretkey) != 0) {
             logger(LOG_NOTICE, "Failed.");
             exit(1);

@@ -11,9 +11,9 @@ before_script:
  - sudo apt-get install libevent-dev
  - git clone git://github.com/jedisct1/libsodium.git
  - cd libsodium
- - git checkout 0.4.1
+ - git checkout 1.0.0
  - ./autogen.sh
- - ./configure --disable-dependency-tracking
+ - ./configure --disable-dependency-tracking --enable-minimal
  - sudo make install
  - sudo ldconfig
  - cd ..
