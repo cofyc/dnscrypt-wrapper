@@ -2,16 +2,23 @@
 
 const KeyPair *
 find_keypair(const struct context *c,
-             const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN])
+             const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
+             const size_t dns_query_len)
 {
     const KeyPair *keypairs = c->keypairs;
     size_t i;
 
+    if (dns_query_len <= DNSCRYPT_QUERY_HEADER_SIZE) {
+        return NULL;
+    }
     for (i = 0U; i < c->keypairs_count; i++) {
         if (memcmp(keypairs[i].crypt_publickey, magic_query,
                    DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
             return &keypairs[i];
         }
+    }
+    if (memcmp(magic_query, CERT_OLD_MAGIC_HEADER, DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
+        return &keypairs[0];
     }
     return NULL;
 }
@@ -185,7 +192,7 @@ dnscrypt_pad(uint8_t *buf, const size_t len, const size_t max_len,
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_PUBLICKEYBYTES + crypto_box_HALF_NONCEBYTES)
 
 int
-dnscrypt_server_uncurve(struct context *c,
+dnscrypt_server_uncurve(struct context *c, const KeyPair *keypair,
                         uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                         uint8_t nmkey[crypto_box_BEFORENMBYTES],
                         uint8_t *const buf, size_t * const lenp)
@@ -199,7 +206,7 @@ dnscrypt_server_uncurve(struct context *c,
     struct dnscrypt_query_header *query_header =
         (struct dnscrypt_query_header *)buf;
     memcpy(nmkey, query_header->publickey, crypto_box_PUBLICKEYBYTES);
-    if (crypto_box_beforenm(nmkey, nmkey, c->keypairs->crypt_secretkey) != 0) {
+    if (crypto_box_beforenm(nmkey, nmkey, keypair->crypt_secretkey) != 0) {
         return -1;
     }
 
@@ -279,7 +286,7 @@ dnscrypt_server_curve(struct context *c,
     len =
         dnscrypt_pad(boxed + crypto_box_MACBYTES, len,
                      max_len - DNSCRYPT_REPLY_HEADER_SIZE, nonce,
-                     c->keypairs->crypt_secretkey);
+                     c->keypairs[0].crypt_secretkey);
     memset(boxed - crypto_box_BOXZEROBYTES, 0, crypto_box_ZEROBYTES);
 
     // add server nonce extension

@@ -138,7 +138,8 @@ struct context {
 };
 
 const KeyPair * find_keypair(const struct context *c,
-                             const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN]);
+                             const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
+                             const size_t dns_query_len);
 int dnscrypt_cmp_client_nonce(const uint8_t
                               client_nonce[crypto_box_HALF_NONCEBYTES],
                               const uint8_t *const buf, const size_t len);
@@ -195,7 +196,7 @@ struct dnscrypt_query_header {
     uint8_t mac[crypto_box_MACBYTES];
 };
 
-int dnscrypt_server_uncurve(struct context *c,
+int dnscrypt_server_uncurve(struct context *c, const KeyPair *keypair,
                             uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                             uint8_t nmkey[crypto_box_BEFORENMBYTES],
                             uint8_t *const buf, size_t * const lenp);

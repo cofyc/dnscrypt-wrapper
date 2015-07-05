@@ -81,6 +81,7 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     uint8_t dns_query_len_buf[2];
     uint8_t dns_curved_query_len_buf[2];
     TCPRequest *tcp_request = tcp_request_;
+    const KeyPair *keypair;
     struct context *c = tcp_request->context;
     struct evbuffer *input = bufferevent_get_input(client_proxy_bev);
     size_t available_size;
@@ -147,29 +148,25 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
-    debug_assert(sizeof c->keypairs->crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
-    if (memcmp
-        (dnscrypt_header->magic_query, c->keypairs->crypt_publickey,
-         DNSCRYPT_MAGIC_HEADER_LEN) == 0
-        || memcmp
-        (dnscrypt_header->magic_query, CERT_OLD_MAGIC_HEADER,
-         DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
+    debug_assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
+    if ((keypair =
+         find_keypair(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
+        if (!c->allow_not_dnscrypted) {
+            logger(LOG_DEBUG, "Unauthenticated query received over TCP");
+            tcp_request_kill(tcp_request);
+            return;
+        }
+        tcp_request->is_dnscrypted = false;
+    } else {
         if (dnscrypt_server_uncurve
-            (c, tcp_request->client_nonce, tcp_request->nmkey, dns_query,
+            (c, keypair, tcp_request->client_nonce, tcp_request->nmkey, dns_query,
              &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             tcp_request_kill(tcp_request);
             return;
         }
         tcp_request->is_dnscrypted = true;
-    } else if (!c->allow_not_dnscrypted) {
-        logger(LOG_DEBUG, "Unauthenticated query received over TCP");
-        tcp_request_kill(tcp_request);
-        return;
-    } else {
-        tcp_request->is_dnscrypted = false;
     }
-
     dns_curved_query_len_buf[0] = (dns_query_len >> 8) & 0xff;
     dns_curved_query_len_buf[1] = dns_query_len & 0xff;
     if (bufferevent_write(tcp_request->proxy_resolver_bev,
