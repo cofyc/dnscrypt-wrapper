@@ -266,7 +266,7 @@ main(int argc, const char **argv)
             printf("This is the provider key you should give to users for your service.\n"
                    "(i.e. dnscrypt-proxy --provider-key=%s\n"
                    "                     --resolver-address=<your resolver public IP>\n"
-                   "                     --resolver-address=2.dnscrypt-cert...)\n",
+                   "                     --provider-name=2.dnscrypt-cert...)\n",
                    fingerprint);
             if (write_to_file
                 (c.provider_publickey_file, (char *)provider_publickey,
