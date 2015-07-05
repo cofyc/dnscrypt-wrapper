@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 dnscrypt-proxy -d -a 127.0.0.1:8855 -r 127.0.0.1:8854 \
     --provider-name=2.dnscrypt-cert.yechengfu.com \
