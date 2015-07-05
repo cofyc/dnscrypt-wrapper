@@ -297,7 +297,7 @@ main(int argc, const char **argv)
     if (gen_crypt_keypair) {
         printf("Generate crypt key pair...");
         fflush(stdout);
-        if ((c.keypairs = malloc(sizeof *c.keypairs)) == NULL)
+        if ((c.keypairs = sodium_malloc(sizeof *c.keypairs)) == NULL)
             exit(1);
         if (crypto_box_keypair(c.keypairs->crypt_publickey,
                                c.keypairs->crypt_secretkey) == 0) {
