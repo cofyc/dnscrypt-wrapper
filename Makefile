@@ -208,5 +208,6 @@ uninstall:
 clean:
 	$(RM) dnscrypt-wrapper
 	$(RM) $(LIB_OBJS)
+	make -C argparse clean
 
 .PHONY: all install uninstall clean FORCE
