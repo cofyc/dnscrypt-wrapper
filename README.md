@@ -45,6 +45,10 @@ On MacOS:
 
     $ brew install dnscrypt-wrapper # best recommended
 
+In Docker:
+
+    See https://github.com/jedisct1/dnscrypt-server-docker.
+
 Usage
 =====
 
