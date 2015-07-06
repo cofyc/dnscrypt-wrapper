@@ -380,6 +380,8 @@ main(int argc, const char **argv)
                               (char *)c.provider_secretkey,
                               crypto_sign_ed25519_SECRETKEYBYTES) == 0) {
         } else {
+            logger(LOG_ERR, "Unable to load master keys from %s and %s.",
+                   c.provider_publickey_file, c.provider_secretkey_file);
             exit(1);
         }
         logger(LOG_NOTICE, "Generating pre-signed certificate.");
