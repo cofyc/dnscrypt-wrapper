@@ -19,7 +19,7 @@ This software is modified from
 Installation
 ============
 
-Install [libsodium](https://github.com/jedisct1/libsodium) and libevent2 first.
+Install [libsodium](https://github.com/jedisct1/libsodium) and [libevent](http://libevent.org/) 2 first.
 
 On Linux:
 
@@ -191,6 +191,8 @@ This also allows upgrades with zero downtime.
 
 中文文档
 ========
+
+注：第三方文档可能未及时与最新版本同步，以 README.md 为准。
 
 - CentOS/Debian/Ubuntu 下编译 dnscrypt-wrapper: http://03k.org/centos-make-dnscrypt-wrapper.html
 - dnscrypt-wrapper 使用方法: http://03k.org/dnscrypt-wrapper-usage.html
