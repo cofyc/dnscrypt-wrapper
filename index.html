@@ -1,49 +1,30 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en-us">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta charset="UTF-8">
     <title>Dnscrypt-wrapper by Cofyc</title>
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script src="javascripts/respond.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <!--[if lt IE 8]>
-    <link rel="stylesheet" href="stylesheets/ie.css">
-    <![endif]-->
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
   <body>
-      <div id="header">
-        <nav>
-          <li class="fork"><a href="https://github.com/Cofyc/dnscrypt-wrapper">View On GitHub</a></li>
-          <li class="downloads"><a href="https://github.com/Cofyc/dnscrypt-wrapper/zipball/master">ZIP</a></li>
-          <li class="downloads"><a href="https://github.com/Cofyc/dnscrypt-wrapper/tarball/master">TAR</a></li>
-          <li class="title">DOWNLOADS</li>
-        </nav>
-      </div><!-- end header -->
+    <section class="page-header">
+      <h1 class="project-name">Dnscrypt-wrapper</h1>
+      <h2 class="project-tagline">This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to add dnscrypt support to any name resolver.</h2>
+      <a href="https://github.com/Cofyc/dnscrypt-wrapper" class="btn">View on GitHub</a>
+      <a href="https://github.com/Cofyc/dnscrypt-wrapper/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/Cofyc/dnscrypt-wrapper/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
 
-    <div class="wrapper">
-
-      <section>
-        <div id="title">
-          <h1>Dnscrypt-wrapper</h1>
-          <p>This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to add dnscrypt support to any name resolver.</p>
-          <hr>
-          <span class="credits left">Project maintained by <a href="https://github.com/Cofyc">Cofyc</a></span>
-          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
-        </div>
-
-        <h1>
+    <section class="main-content">
+      <h1>
 <a id="name" class="anchor" href="#name" aria-hidden="true"><span class="octicon octicon-link"></span></a>Name</h1>
 
 <p>dnscrypt-wrapper - A server-side dnscrypt proxy.</p>
 
-<p>(c) 2012-2013 Yecheng Fu </p>
+<p>(c) 2012-2015 Yecheng Fu </p>
 
 <p><a href="https://travis-ci.org/Cofyc/dnscrypt-wrapper"><img src="https://travis-ci.org/Cofyc/dnscrypt-wrapper.png?branch=master" alt="Build Status"></a></p>
 
@@ -84,60 +65,192 @@ $ pkg_add -r libevent
 $ gmake LDFLAGS='-L/usr/local/lib/' CFLAGS=-I/usr/local/include/
 </code></pre>
 
+<p>On MacOS:</p>
+
+<pre><code>$ brew install dnscrypt-wrapper # best recommended
+</code></pre>
+
+<p>In Docker:</p>
+
+<pre><code>See https://github.com/jedisct1/dnscrypt-server-docker.
+</code></pre>
+
 <h1>
 <a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h1>
 
-<p>First, generate provider keypair:</p>
+<p>1) Generate the provider key pair:</p>
 
-<pre><code># stored in public.key/secret.key in current directory
-$ ./dnscrypt-wrapper --gen-provider-keypair
+<pre><code>$ dnscrypt-wrapper --gen-provider-keypair
 </code></pre>
 
-<p>Second, generate crypt keypair:</p>
+<p>This will create two files in the current directory: <code>public.key</code> and
+<code>secret.key</code>.</p>
 
-<pre><code># stored in crypt_public.key/crypt_secret.key in current directory
-$ ./dnscrypt-wrapper --gen-crypt-keypair
+<p>This is a long-term key pair that is never supposed to change unless the
+secret key is compromised. Make sure that <code>secret.key</code> is securely
+stored and backuped.</p>
+
+<p>2) Generate a time-limited secret key, which will be used to encrypt
+and authenticate DNS queries. Also generate a certificate for it:</p>
+
+<pre><code>$ dnscrypt-wrapper --gen-crypt-keypair --crypt-secretkey-file=1.key
+$ dnscrypt-wrapper --gen-cert-file --crypt-secretkey-file=1.key --provider-cert-file=1.cert
 </code></pre>
 
-<p>Third, generate pre-signed certificate (use pre-generated key pairs):</p>
+<p>In this example, the time-limited secret key will be saved as <code>1.key</code>
+and its related certificate as <code>1.cert</code> in the current directory.</p>
 
-<pre><code># stored in dnscrypt.cert in current directory
-$ ./dnscrypt-wrapper --crypt-secretkey-file crypt_secret.key --crypt-publickey-file=crypt_public.key --provider-publickey-file=public.key --provider-secretkey-file=secret.key --gen-cert-file
+<p>Time-limited secret keys and certificates can be updated at any time
+without requiring clients to update their configuration.</p>
+
+<p>3) Run the program with a given key, a provider name and the most recent certificate:</p>
+
+<pre><code># dnscrypt-wrapper --resolver-address=114.114.114.114:53 --listen-address=0.0.0.0:443 \
+                   --provider-name=2.dnscrypt-cert.yechengfu.com \
+                   --crypt-secretkey-file=1.key --provider-cert-file=1.cert
 </code></pre>
 
-<p>Run the program with pre-signed certificate:</p>
+<p>The provider name can be anything; it doesn't have to be within an existing domain name.
+However, it has to start with <code>2.dnscrypt-cert.</code>.</p>
 
-<pre><code>$ ./dnscrypt-wrapper  -r 8.8.8.8:53 -a 0.0.0.0:54  --crypt-secretkey-file=crypt_secret.key --crypt-publickey-file=crypt_public.key --provider-cert-file=dnscrypt.cert --provider-name=2.dnscrypt-cert.yechengfu.com -VV
-</code></pre>
+<p>When the service is started with the <code>--provider-cert</code> switch, the
+proxy will automatically serve the certificate as a TXT record when a
+query for the provider name is received.</p>
 
-<p>If you can store genearted pre-signed certificate (binary string) in TXT record for your provider name, for example: 2.dnscrypt-cert.yourdomain.com. Then you can omit <code>--provider-cert-file</code> option. Name server will serve this binary certificate data for you.</p>
+<p>As an alternative, the TXT record can be served by a name server for
+an actual DNS zone you are authoritative for. In that scenario, the
+<code>--provider-cert-file</code> option is not required, and instructions for
+Unbound and TinyDNS are displayed by the program when generating a
+provider certificate.</p>
 
-<p>P.S. We still provide <code>--provider-cert-file</code> option, because it's not convenient to store such long binary data in dns TXT record sometimes. But it's easy to configure it in your own dns servers (such as tinydns, etc). <code>--gen-cert-file</code> will generate example record in stdout.</p>
+<p>4) Run dnscrypt-proxy to check if it works:</p>
 
-<p>Run dnscrypt-proxy to test againt it:</p>
-
-<pre><code># --provider-key is public key fingerprint in first step.
-$ ./dnscrypt-proxy -a 127.0.0.1:55 --provider-name=2.dnscrypt-cert.yechengfu.com -r 127.0.0.1:54 --provider-key=&lt;provider_public_key_fingerprint&gt;
+<pre><code># dnscrypt-proxy --local-address=127.0.0.1:55 --resolver-address=127.0.0.1:443 \
+                 --provider-name=2.dnscrypt-cert.yechengfu.com \
+                 --provider-key=&lt;provider_public_key_fingerprint&gt;
 $ dig -p 55 google.com @127.0.0.1
 </code></pre>
 
-<p><code>&lt;provider_public_key_fingerprint&gt;</code> is public key fingerprint generated by <code>./dnscrypt-wrapper --gen-provider-keypair</code>, e.g. 4298:5F65:C295:DFAE:2BFB:20AD:5C47:F565:78EB:2404:EF83:198C:85DB:68F1:3E33:E952.</p>
+<p><code>&lt;provider_public_key_fingerprint&gt;</code> is public key fingerprint
+generated by <code>dnscrypt-wrapper --gen-provider-keypair</code>, which looks
+like <code>4298:5F65:C295:DFAE:2BFB:20AD:5C47:F565:78EB:2404:EF83:198C:85DB:68F1:3E33:E952</code>.</p>
 
-<p>Optional, add <code>-d/--daemonize</code> flag to run as daemon.</p>
+<p>Optionally, add <code>-d/--daemonize</code> flag to run as a daemon.</p>
 
-<p>Run <code>./dnscrypt-wrapper -h</code> to view command line options.</p>
+<p>Run <code>dnscrypt-wrapper -h</code> to view command line options.</p>
+
+<h1>
+<a id="running-unauthenticated-dns-and-the-dnscrypt-service-on-the-same-port" class="anchor" href="#running-unauthenticated-dns-and-the-dnscrypt-service-on-the-same-port" aria-hidden="true"><span class="octicon octicon-link"></span></a>Running unauthenticated DNS and the dnscrypt service on the same port</h1>
+
+<p>By default, and with the exception of records used for the
+certificates, only queries using the DNSCrypt protocol will be
+accepted.</p>
+
+<p>If you want to run a service only accessible using DNSCrypt, this is
+what you want.</p>
+
+<p>If you want to run a service accessible both with and without
+DNSCrypt, what you usually want is to keep the standard DNS port for
+the unauthenticated DNS service (53), and use a different port for
+DNSCrypt. You don't have to change anything for this either.</p>
+
+<p>However, if you want to run both on the same port, maybe because only
+port 53 is reachable on your server, you can add the <code>-U</code>
+(<code>--unauthenticated</code>) switch to the command-line. This is not
+recommended.</p>
+
+<h1>
+<a id="key-rotation" class="anchor" href="#key-rotation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Key rotation</h1>
+
+<p>Time-limited keys are bound to expire.</p>
+
+<p><code>dnscrypt-proxy</code> can check if the current key for a given server is
+not going to expire soon:</p>
+
+<pre><code>$ dnscrypt-proxy --resolver-address=127.0.0.1:443 \
+                 --provider-name=2.dnscrypt-cert.yechengfu.com \
+                 --provider-key=&lt;provider_public_key_fingerprint&gt; \
+                 --test=10080
+</code></pre>
+
+<p>The <code>--test</code> option is followed by a "grace margin".</p>
+
+<p>The command will immediately exit after verifying the certificate validity.</p>
+
+<p>The exit code is <code>0</code> if a valid certificate can be used, <code>2</code> if no valid
+certificates ca be used, <code>3</code> if a timeout occurred, and <code>4</code> if a currently
+valid certificate is going to expire before margin.</p>
+
+<p>The margin is always specificied in minutes.</p>
+
+<p>This can be used in a cron tab to trigger an alert before a key is
+going to expire.</p>
+
+<p>In order to switch to a fresh new key:</p>
+
+<p>1) Create a new time-limited key (do not change the provider key!) and
+its certificate:</p>
+
+<pre><code>$ dnscrypt-wrapper --gen-crypt-keypair --crypt-secretkey-file=2.key
+$ dnscrypt-wrapper --gen-cert-file --crypt-secretkey-file=2.key --provider-cert-file=2.cert
+</code></pre>
+
+<p>2) Tell new users to use the new certificate but still accept the old
+key until all clients have loaded the new certificate:</p>
+
+<pre><code># dnscrypt-wrapper --resolver-address=114.114.114.114:53 --listen-address=0.0.0.0:443 \
+                   --provider-name=2.dnscrypt-cert.yechengfu.com \
+                   --crypt-secretkey-file=1.key,2.key --provider-cert-file=2.cert
+</code></pre>
+
+<p>Note that both <code>1.key</code> and <code>2.key</code> have be specified, in order to
+accept both the previous and the current key.</p>
+
+<p>3) Clients automatically check for new certificates every hour. So,
+after one hour, the old certificate can be refused, by leaving only
+the new one in the configuration:</p>
+
+<pre><code># dnscrypt-wrapper --resolver-address=114.114.114.114:53 --listen-address=0.0.0.0:443 \
+                   --provider-name=2.dnscrypt-cert.yechengfu.com \
+                   --crypt-secretkey-file=2.key --provider-cert-file=2.cert
+</code></pre>
+
+<p>Please note that on Linux systems, multiples instances of
+<code>dnscrypt-wrapper</code> can run at the same time. Therefore, in order to
+switch to a new configuration, one can start a new daemon without
+killing the previous instance, and only kill the previous instance
+after the new one started.</p>
+
+<p>This also allows upgrades with zero downtime.</p>
+
+<h1>
+<a id="中文文档" class="anchor" href="#%E4%B8%AD%E6%96%87%E6%96%87%E6%A1%A3" aria-hidden="true"><span class="octicon octicon-link"></span></a>中文文档</h1>
+
+<ul>
+<li>CentOS/Debian/Ubuntu 下编译 dnscrypt-wrapper: <a href="http://03k.org/centos-make-dnscrypt-wrapper.html">http://03k.org/centos-make-dnscrypt-wrapper.html</a>
+</li>
+<li>dnscrypt-wrapper 使用方法: <a href="http://03k.org/dnscrypt-wrapper-usage.html">http://03k.org/dnscrypt-wrapper-usage.html</a>
+</li>
+</ul>
 
 <h1>
 <a id="see-also" class="anchor" href="#see-also" aria-hidden="true"><span class="octicon octicon-link"></span></a>See also</h1>
 
 <ul>
 <li><a href="http://dnscrypt.org/">http://dnscrypt.org/</a></li>
-<li><a href="http://www.opendns.com/technology/dnscrypt/">http://www.opendns.com/technology/dnscrypt/</a></li>
+<li><a href="https://github.com/jedisct1/dnscrypt-proxy">https://github.com/jedisct1/dnscrypt-proxy</a></li>
+<li><a href="https://github.com/Cofyc/dnscrypt-wrapper">https://github.com/Cofyc/dnscrypt-wrapper</a></li>
 </ul>
-      </section>
 
-    </div>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-    
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/Cofyc/dnscrypt-wrapper">Dnscrypt-wrapper</a> is maintained by <a href="https://github.com/Cofyc">Cofyc</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
   </body>
 </html>
+
