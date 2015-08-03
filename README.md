@@ -147,8 +147,8 @@ The `--test` option is followed by a "grace margin".
 The command will immediately exit after verifying the certificate validity.
 
 The exit code is `0` if a valid certificate can be used, `2` if no valid
-certificates ca be used, `3` if a timeout occurred, and `4` if a currently
-valid certificate is going to expire before margin.
+certificates can be used, `3` if a timeout occurred, and `4` if a currently
+valid certificate is going to expire before the margin.
 
 The margin is always specificied in minutes.
 
