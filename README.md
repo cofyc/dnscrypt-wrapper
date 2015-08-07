@@ -181,7 +181,7 @@ the new one in the configuration:
                        --provider-name=2.dnscrypt-cert.yechengfu.com \
                        --crypt-secretkey-file=2.key --provider-cert-file=2.cert
 
-Please note that on Linux systems, multiples instances of
+Please note that on Linux systems (kernel >= 3.9), multiples instances of
 `dnscrypt-wrapper` can run at the same time. Therefore, in order to
 switch to a new configuration, one can start a new daemon without
 killing the previous instance, and only kill the previous instance
