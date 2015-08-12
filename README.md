@@ -63,6 +63,12 @@ This is a long-term key pair that is never supposed to change unless the
 secret key is compromised. Make sure that `secret.key` is securely
 stored and backuped.
 
+If you forgot to save your provider public key fingerprint:
+
+    $ dnscrypt-wrapper --show-provider-publickey-fingerprint --provider-publickey-file <your-publickey-file>
+
+This will print it out.
+
 2) Generate a time-limited secret key, which will be used to encrypt
 and authenticate DNS queries. Also generate a certificate for it:
 
@@ -84,7 +90,7 @@ without requiring clients to update their configuration.
 The provider name can be anything; it doesn't have to be within an existing domain name.
 However, it has to start with `2.dnscrypt-cert.`.
 
-When the service is started with the `--provider-cert` switch, the
+When the service is started with the `--provider-cert-file` switch, the
 proxy will automatically serve the certificate as a TXT record when a
 query for the provider name is received.
 
