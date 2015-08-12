@@ -189,6 +189,7 @@ main(int argc, const char **argv)
     int gen_crypt_keypair = 0;
     int gen_cert_file = 0;
     int cert_file_expire_days = CERT_FILE_EXPIRE_DAYS;
+    int provider_publickey_fingerprint = 0;
     int verbose = 0;
     struct argparse argparse;
     struct argparse_option options[] = {
@@ -204,6 +205,8 @@ main(int argc, const char **argv)
                     "generate crypt key pair"),
         OPT_BOOLEAN(0, "gen-provider-keypair", &gen_provider_keypair,
                     "generate provider key pair"),
+        OPT_BOOLEAN(0, "provider-publickey-fingerprint", &provider_publickey_fingerprint,
+                    "display provider public key fingerprint"),
         OPT_STRING('a', "listen-address", &c.listen_address,
                    "local address to listen (default: 0.0.0.0:53)"),
         OPT_STRING('l', "logfile", &c.logfile,
@@ -292,6 +295,21 @@ main(int argc, const char **argv)
             printf(" failed.\n");
             exit(1);
         }
+    }
+
+    if (provider_publickey_fingerprint) {
+        char fingerprint[80];
+
+        if (read_from_file(c.provider_publickey_file,
+                           (char *)c.provider_publickey,
+                           crypto_sign_ed25519_PUBLICKEYBYTES) != 0) {
+            logger(LOG_ERR, "Unable to read %s", c.provider_publickey_file);
+            exit(1);
+        }
+        dnscrypt_key_to_fingerprint(fingerprint, c.provider_publickey);
+        printf("Provider public key fingerprint : %s\n",
+               fingerprint);
+        exit(0);
     }
 
     if (gen_crypt_keypair) {
