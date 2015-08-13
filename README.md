@@ -25,6 +25,7 @@ On Linux:
 
     $ ldconfig # if you install libsodium from source
     $ git clone --recursive git://github.com/Cofyc/dnscrypt-wrapper.git
+    $ cd dnscrypt-wrapper
     $ make configure
     $ ./configure
     $ make install
