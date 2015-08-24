@@ -199,8 +199,8 @@ version.h: FORCE
 	@./gen-version.sh
 
 install: all
-	$(INSTALL) -d -m 755 '$(sbindir)'
-	$(INSTALL) -p dnscrypt-wrapper '$(sbindir)'
+	$(INSTALL) -d -m 755 '$(DESTDIR)$(sbindir)'
+	$(INSTALL) -p dnscrypt-wrapper '$(DESTDIR)$(sbindir)'
 
 uninstall:
 	$(RM) $(sbindir)/dnscrypt-wrapper
