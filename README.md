@@ -32,9 +32,7 @@ On Linux:
 
 On FreeBSD:
 
-    $ pkg_add -r gmake autoconf
-    $ pkg_add -r libevent2
-    $ gmake LDFLAGS='-L/usr/local/lib/event2 -L/usr/local/lib' CFLAGS=-I/usr/local/include
+    $ pkg install dnscrypt-wrapper
 
 On OpenBSD:
 
