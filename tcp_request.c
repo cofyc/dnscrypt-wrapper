@@ -42,8 +42,13 @@ tcp_tune(evutil_socket_t handle)
     if (handle == -1) {
         return;
     }
+#ifdef TCP_QUICKACK
+    setsockopt(handle, IPPROTO_TCP, TCP_QUICKACK, (void *)(int[]) {
+               1}, sizeof(int));
+#else
     setsockopt(handle, IPPROTO_TCP, TCP_NODELAY, (void *)(int[]) {
                1}, sizeof(int));
+#endif
 #if defined(__linux__) && defined(SO_REUSEPORT)
     setsockopt(handle, SOL_SOCKET, SO_REUSEPORT, (void *)(int[]) {
         1}, sizeof(int));
