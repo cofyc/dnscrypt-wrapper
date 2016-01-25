@@ -19,7 +19,7 @@ This software is modified from
 Installation
 ============
 
-Install [libsodium](https://github.com/jedisct1/libsodium) and [libevent](http://libevent.org/) 2 first.
+Install [libsodium](https://github.com/jedisct1/libsodium) and [libevent](http://libevent.org/) 2.1.1+ first.
 
 On Linux:
 
