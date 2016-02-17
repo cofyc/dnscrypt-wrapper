@@ -354,6 +354,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - DNSCRYPT_QUERY_HEADER_SIZE >
            dns_query_len);
 
+    udp_request->len = (uint16_t) dns_query_len;
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
@@ -439,6 +440,31 @@ lookup_request(struct context *c, uint16_t id, uint64_t hash)
     return found_udp_request;
 }
 
+static int
+maybe_truncate(uint8_t *const dns_reply, size_t *const dns_reply_len_p, size_t query_len)
+{
+    struct dns_header *header = (struct dns_header *)dns_reply;
+    uint8_t *ansp;
+
+    if (*dns_reply_len_p <= sizeof(struct dns_header)) {
+        *dns_reply_len_p = 0;
+        return -1;
+    }
+    if (query_len >= *dns_reply_len_p) {
+        return 0;
+    }
+    if (!(ansp = skip_questions(header, *dns_reply_len_p))) {
+        *dns_reply_len_p = sizeof(struct dns_header);
+        return -1;
+    }
+    *dns_reply_len_p = (size_t) (ansp - dns_reply);
+    header->hb3 |= HB3_TC;
+    header->nscount = htons(0);
+    header->arcount = htons(0);
+
+    return 0;
+}
+
 static void
 resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
                      void *const context)
@@ -492,6 +518,8 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
         dns_reply_len + DNSCRYPT_MAX_PADDING + DNSCRYPT_REPLY_HEADER_SIZE;
     if (max_len > max_reply_size)
         max_len = max_reply_size;
+
+    maybe_truncate(dns_reply, &dns_reply_len, udp_request->len);
 
     if (udp_request->is_dnscrypted) {
         if (dnscrypt_server_curve
