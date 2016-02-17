@@ -60,6 +60,8 @@ getMcontextEip(ucontext_t *uc)
     return (void *) uc->uc_mcontext.gregs[16]; /* Linux 64 */
     #elif defined(__ia64__)                    /* Linux IA64 */
     return (void *) uc->uc_mcontext.sc_ip;
+    #else
+    return NULL;
     #endif
 #else
     return NULL;
