@@ -459,6 +459,7 @@ maybe_truncate(uint8_t *const dns_reply, size_t *const dns_reply_len_p, size_t q
     }
     *dns_reply_len_p = (size_t) (ansp - dns_reply);
     header->hb3 |= HB3_TC;
+    header->ancount = htons(0);
     header->nscount = htons(0);
     header->arcount = htons(0);
 
