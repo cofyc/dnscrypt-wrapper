@@ -78,6 +78,86 @@ tcp_listener_kill_oldest_request(struct context *c)
     return 0;
 }
 
+
+/**
+ * Return 0 if served.
+ */
+static int
+self_serve_cert_file(struct context *c, struct dns_header *header,
+                     size_t dns_query_len, TCPRequest *tcp_request)
+{
+    unsigned char *p;
+    unsigned char *ansp;
+    uint8_t dns_query_len_buf[2];
+    int q;
+    int qtype;
+    unsigned int nameoffset;
+    p = (unsigned char *)(header + 1);
+    int anscount = 0;
+    /* determine end of questions section (we put answers there) */
+    if (!(ansp = skip_questions(header, dns_query_len))) {
+        return -1;
+    }
+    for (q = ntohs(header->qdcount); q != 0; q--) {
+        /* save pointer to name for copying into answers */
+        nameoffset = p - (unsigned char *)header;
+
+        if (!extract_name(header, dns_query_len, &p, c->namebuff, 1, 4)) {
+            return -1;
+        }
+        GETSHORT(qtype, p);
+        if (qtype == T_TXT && strcasecmp(c->provider_name, c->namebuff) == 0) {
+            // reply with signed certificate
+            const size_t size = 1 + sizeof(struct SignedCert);
+            static uint8_t *txt;
+
+            if (!txt) {
+                txt = malloc(size);
+                if (!txt)
+                    return -1;
+                *txt = sizeof(struct SignedCert);
+                memcpy(txt + 1, &c->signed_cert, sizeof(struct SignedCert));
+            }
+            if (add_resource_record
+                (header, nameoffset, &ansp, 0, NULL, T_TXT, C_IN, "t", size,
+                 txt)) {
+                anscount++;
+            } else {
+                return -1;
+            }
+            /* done all questions, set up header and return length of result */
+            /* clear authoritative and truncated flags, set QR flag */
+            header->hb3 = (header->hb3 & ~(HB3_AA | HB3_TC)) | HB3_QR;
+            /* set RA flag */
+            header->hb4 |= HB4_RA;
+
+            SET_RCODE(header, NOERROR);
+            header->ancount = htons(anscount);
+            header->nscount = htons(0);
+            header->arcount = htons(0);
+            dns_query_len = ansp - (unsigned char *)header;
+
+	        dns_query_len_buf[0] = (dns_query_len >> 8) & 0xff;
+            dns_query_len_buf[1] = dns_query_len & 0xff;
+	        if (bufferevent_write(tcp_request->client_proxy_bev,
+                              dns_query_len_buf, (size_t) 2U) != 0 ||
+		    bufferevent_write(tcp_request->client_proxy_bev, (void *)header,
+		                      (size_t)dns_query_len) != 0) {
+		    tcp_request_kill(tcp_request);
+		    return -1;
+	        }
+	        bufferevent_enable(tcp_request->client_proxy_bev, EV_WRITE);
+	        bufferevent_free(tcp_request->proxy_resolver_bev);
+	        tcp_request->proxy_resolver_bev = NULL;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+
+
+
 static void
 client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
                      void *const tcp_request_)
@@ -156,11 +236,11 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     debug_assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
     if ((keypair =
          find_keypair(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
-        if (!c->allow_not_dnscrypted) {
-            logger(LOG_DEBUG, "Unauthenticated query received over TCP");
-            tcp_request_kill(tcp_request);
-            return;
-        }
+        //if (!c->allow_not_dnscrypted) {
+        //    logger(LOG_DEBUG, "Unauthenticated query received over TCP");
+        //    tcp_request_kill(tcp_request);
+        //    return;
+        //}
         tcp_request->is_dnscrypted = false;
     } else {
         if (dnscrypt_server_uncurve
@@ -171,6 +251,19 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
             return;
         }
         tcp_request->is_dnscrypted = true;
+    }
+    
+    struct dns_header *header = (struct dns_header *)dns_query;
+    logger(LOG_DEBUG, "Starting serve cert file...");
+    // self serve signed certificate for provider name?
+    if (!tcp_request->is_dnscrypted) {
+        if (self_serve_cert_file(c, header, dns_query_len, tcp_request) == 0)
+            return;
+        if (!c->allow_not_dnscrypted) {
+            logger(LOG_DEBUG, "Unauthenticated query received over TCP");
+            tcp_request_kill(tcp_request);
+            return;
+        }
     }
     dns_curved_query_len_buf[0] = (dns_query_len >> 8) & 0xff;
     dns_curved_query_len_buf[1] = dns_query_len & 0xff;
@@ -468,3 +561,4 @@ tcp_listener_stop(struct context *c)
     }
     logger(LOG_INFO, "TCP listener shut down");
 }
+
