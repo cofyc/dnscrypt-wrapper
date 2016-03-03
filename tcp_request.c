@@ -137,26 +137,23 @@ self_serve_cert_file(struct context *c, struct dns_header *header,
             header->arcount = htons(0);
             dns_query_len = ansp - (unsigned char *)header;
 
-	        dns_query_len_buf[0] = (dns_query_len >> 8) & 0xff;
+            dns_query_len_buf[0] = (dns_query_len >> 8) & 0xff;
             dns_query_len_buf[1] = dns_query_len & 0xff;
-	        if (bufferevent_write(tcp_request->client_proxy_bev,
+            if (bufferevent_write(tcp_request->client_proxy_bev,
                               dns_query_len_buf, (size_t) 2U) != 0 ||
-		    bufferevent_write(tcp_request->client_proxy_bev, (void *)header,
-		                      (size_t)dns_query_len) != 0) {
-		    tcp_request_kill(tcp_request);
-		    return -1;
-	        }
-	        bufferevent_enable(tcp_request->client_proxy_bev, EV_WRITE);
-	        bufferevent_free(tcp_request->proxy_resolver_bev);
-	        tcp_request->proxy_resolver_bev = NULL;
+                bufferevent_write(tcp_request->client_proxy_bev, (void *)header,
+                                  (size_t)dns_query_len) != 0) {
+                tcp_request_kill(tcp_request);
+                return -1;
+            }
+            bufferevent_enable(tcp_request->client_proxy_bev, EV_WRITE);
+            bufferevent_free(tcp_request->proxy_resolver_bev);
+            tcp_request->proxy_resolver_bev = NULL;
             return 0;
         }
     }
     return -1;
 }
-
-
-
 
 static void
 client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
