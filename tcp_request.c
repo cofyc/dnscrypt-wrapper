@@ -236,11 +236,6 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     debug_assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
     if ((keypair =
          find_keypair(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
-        //if (!c->allow_not_dnscrypted) {
-        //    logger(LOG_DEBUG, "Unauthenticated query received over TCP");
-        //    tcp_request_kill(tcp_request);
-        //    return;
-        //}
         tcp_request->is_dnscrypted = false;
     } else {
         if (dnscrypt_server_uncurve
@@ -254,7 +249,6 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     }
     
     struct dns_header *header = (struct dns_header *)dns_query;
-    logger(LOG_DEBUG, "Starting serve cert file...");
     // self serve signed certificate for provider name?
     if (!tcp_request->is_dnscrypted) {
         if (self_serve_cert_file(c, header, dns_query_len, tcp_request) == 0)
