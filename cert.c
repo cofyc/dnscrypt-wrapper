@@ -17,7 +17,6 @@ cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days)
            crypto_box_PUBLICKEYBYTES);
     memcpy(signed_cert->magic_query, crypt_publickey,
            sizeof(signed_cert->magic_query));
-    memcpy(signed_cert->serial, "0001", 4);
     uint32_t ts_begin = (uint32_t)time(NULL);
     uint32_t ts_end = ts_begin + cert_file_expire_days * 24 * 3600;
     if (cert_file_expire_days <= 0) {
@@ -25,6 +24,7 @@ cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days)
     }
     ts_begin = htonl(ts_begin);
     ts_end = htonl(ts_end);
+    memcpy(signed_cert->serial, &ts_begin, 4);
     memcpy(signed_cert->ts_begin, &ts_begin, 4);
     memcpy(signed_cert->ts_end, &ts_end, 4);
     memset(signed_cert->end, 0, sizeof(signed_cert->end));
