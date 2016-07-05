@@ -5,7 +5,7 @@ dnscrypt-wrapper - A server-side dnscrypt proxy.
 
 (c) 2012-2015 Yecheng Fu <cofyc.jackson at gmail dot com>
 
-[![Build Status](https://travis-ci.org/Cofyc/dnscrypt-wrapper.png?branch=master)](https://travis-ci.org/Cofyc/dnscrypt-wrapper)
+[![Build Status](https://travis-ci.org/cofyc/dnscrypt-wrapper.png?branch=master)](https://travis-ci.org/cofyc/dnscrypt-wrapper)
 
 Description
 ===========
@@ -24,7 +24,7 @@ Install [libsodium](https://github.com/jedisct1/libsodium) and [libevent](http:/
 On Linux:
 
     $ ldconfig # if you install libsodium from source
-    $ git clone --recursive git://github.com/Cofyc/dnscrypt-wrapper.git
+    $ git clone --recursive git://github.com/cofyc/dnscrypt-wrapper.git
     $ cd dnscrypt-wrapper
     $ make configure
     $ ./configure
@@ -207,4 +207,4 @@ See also
 
 - http://dnscrypt.org/
 - https://github.com/jedisct1/dnscrypt-proxy
-- https://github.com/Cofyc/dnscrypt-wrapper
+- https://github.com/cofyc/dnscrypt-wrapper
