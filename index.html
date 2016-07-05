@@ -2,10 +2,10 @@
 <html lang="en-us">
   <head>
     <meta charset="UTF-8">
-    <title>Dnscrypt-wrapper by Cofyc</title>
+    <title>Dnscrypt-wrapper by cofyc</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
@@ -13,23 +13,23 @@
     <section class="page-header">
       <h1 class="project-name">Dnscrypt-wrapper</h1>
       <h2 class="project-tagline">This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to add dnscrypt support to any name resolver.</h2>
-      <a href="https://github.com/Cofyc/dnscrypt-wrapper" class="btn">View on GitHub</a>
-      <a href="https://github.com/Cofyc/dnscrypt-wrapper/zipball/master" class="btn">Download .zip</a>
-      <a href="https://github.com/Cofyc/dnscrypt-wrapper/tarball/master" class="btn">Download .tar.gz</a>
+      <a href="https://github.com/cofyc/dnscrypt-wrapper" class="btn">View on GitHub</a>
+      <a href="https://github.com/cofyc/dnscrypt-wrapper/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/cofyc/dnscrypt-wrapper/tarball/master" class="btn">Download .tar.gz</a>
     </section>
 
     <section class="main-content">
       <h1>
-<a id="name" class="anchor" href="#name" aria-hidden="true"><span class="octicon octicon-link"></span></a>Name</h1>
+<a id="name" class="anchor" href="#name" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Name</h1>
 
 <p>dnscrypt-wrapper - A server-side dnscrypt proxy.</p>
 
 <p>(c) 2012-2015 Yecheng Fu </p>
 
-<p><a href="https://travis-ci.org/Cofyc/dnscrypt-wrapper"><img src="https://travis-ci.org/Cofyc/dnscrypt-wrapper.png?branch=master" alt="Build Status"></a></p>
+<p><a href="https://travis-ci.org/cofyc/dnscrypt-wrapper"><img src="https://travis-ci.org/cofyc/dnscrypt-wrapper.png?branch=master" alt="Build Status"></a></p>
 
 <h1>
-<a id="description" class="anchor" href="#description" aria-hidden="true"><span class="octicon octicon-link"></span></a>Description</h1>
+<a id="description" class="anchor" href="#description" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Description</h1>
 
 <p>This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to
 add dnscrypt support to any name resolver.</p>
@@ -38,14 +38,15 @@ add dnscrypt support to any name resolver.</p>
 <a href="https://github.com/jedisct1/dnscrypt-proxy">dnscrypt-proxy</a>.</p>
 
 <h1>
-<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h1>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h1>
 
-<p>Install <a href="https://github.com/jedisct1/libsodium">libsodium</a> and libevent2 first.</p>
+<p>Install <a href="https://github.com/jedisct1/libsodium">libsodium</a> and <a href="http://libevent.org/">libevent</a> 2.1.1+ first.</p>
 
 <p>On Linux:</p>
 
 <pre><code>$ ldconfig # if you install libsodium from source
-$ git clone --recursive git://github.com/Cofyc/dnscrypt-wrapper.git
+$ git clone --recursive git://github.com/cofyc/dnscrypt-wrapper.git
+$ cd dnscrypt-wrapper
 $ make configure
 $ ./configure
 $ make install
@@ -53,9 +54,7 @@ $ make install
 
 <p>On FreeBSD:</p>
 
-<pre><code>$ pkg_add -r gmake autoconf
-$ pkg_add -r libevent2
-$ gmake LDFLAGS='-L/usr/local/lib/event2 -L/usr/local/lib' CFLAGS=-I/usr/local/include
+<pre><code>$ pkg install dnscrypt-wrapper
 </code></pre>
 
 <p>On OpenBSD:</p>
@@ -76,7 +75,7 @@ $ gmake LDFLAGS='-L/usr/local/lib/' CFLAGS=-I/usr/local/include/
 </code></pre>
 
 <h1>
-<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h1>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h1>
 
 <p>1) Generate the provider key pair:</p>
 
@@ -89,6 +88,13 @@ $ gmake LDFLAGS='-L/usr/local/lib/' CFLAGS=-I/usr/local/include/
 <p>This is a long-term key pair that is never supposed to change unless the
 secret key is compromised. Make sure that <code>secret.key</code> is securely
 stored and backuped.</p>
+
+<p>If you forgot to save your provider public key fingerprint:</p>
+
+<pre><code>$ dnscrypt-wrapper --show-provider-publickey-fingerprint --provider-publickey-file &lt;your-publickey-file&gt;
+</code></pre>
+
+<p>This will print it out.</p>
 
 <p>2) Generate a time-limited secret key, which will be used to encrypt
 and authenticate DNS queries. Also generate a certificate for it:</p>
@@ -113,7 +119,7 @@ without requiring clients to update their configuration.</p>
 <p>The provider name can be anything; it doesn't have to be within an existing domain name.
 However, it has to start with <code>2.dnscrypt-cert.</code>.</p>
 
-<p>When the service is started with the <code>--provider-cert</code> switch, the
+<p>When the service is started with the <code>--provider-cert-file</code> switch, the
 proxy will automatically serve the certificate as a TXT record when a
 query for the provider name is received.</p>
 
@@ -140,7 +146,7 @@ like <code>4298:5F65:C295:DFAE:2BFB:20AD:5C47:F565:78EB:2404:EF83:198C:85DB:68F1
 <p>Run <code>dnscrypt-wrapper -h</code> to view command line options.</p>
 
 <h1>
-<a id="running-unauthenticated-dns-and-the-dnscrypt-service-on-the-same-port" class="anchor" href="#running-unauthenticated-dns-and-the-dnscrypt-service-on-the-same-port" aria-hidden="true"><span class="octicon octicon-link"></span></a>Running unauthenticated DNS and the dnscrypt service on the same port</h1>
+<a id="running-unauthenticated-dns-and-the-dnscrypt-service-on-the-same-port" class="anchor" href="#running-unauthenticated-dns-and-the-dnscrypt-service-on-the-same-port" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Running unauthenticated DNS and the dnscrypt service on the same port</h1>
 
 <p>By default, and with the exception of records used for the
 certificates, only queries using the DNSCrypt protocol will be
@@ -160,7 +166,7 @@ port 53 is reachable on your server, you can add the <code>-U</code>
 recommended.</p>
 
 <h1>
-<a id="key-rotation" class="anchor" href="#key-rotation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Key rotation</h1>
+<a id="key-rotation" class="anchor" href="#key-rotation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Key rotation</h1>
 
 <p>Time-limited keys are bound to expire.</p>
 
@@ -178,8 +184,8 @@ not going to expire soon:</p>
 <p>The command will immediately exit after verifying the certificate validity.</p>
 
 <p>The exit code is <code>0</code> if a valid certificate can be used, <code>2</code> if no valid
-certificates ca be used, <code>3</code> if a timeout occurred, and <code>4</code> if a currently
-valid certificate is going to expire before margin.</p>
+certificates can be used, <code>3</code> if a timeout occurred, and <code>4</code> if a currently
+valid certificate is going to expire before the margin.</p>
 
 <p>The margin is always specificied in minutes.</p>
 
@@ -215,7 +221,7 @@ the new one in the configuration:</p>
                    --crypt-secretkey-file=2.key --provider-cert-file=2.cert
 </code></pre>
 
-<p>Please note that on Linux systems, multiples instances of
+<p>Please note that on Linux systems (kernel &gt;= 3.9), multiples instances of
 <code>dnscrypt-wrapper</code> can run at the same time. Therefore, in order to
 switch to a new configuration, one can start a new daemon without
 killing the previous instance, and only kill the previous instance
@@ -224,7 +230,9 @@ after the new one started.</p>
 <p>This also allows upgrades with zero downtime.</p>
 
 <h1>
-<a id="中文文档" class="anchor" href="#%E4%B8%AD%E6%96%87%E6%96%87%E6%A1%A3" aria-hidden="true"><span class="octicon octicon-link"></span></a>中文文档</h1>
+<a id="中文文档" class="anchor" href="#%E4%B8%AD%E6%96%87%E6%96%87%E6%A1%A3" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>中文文档</h1>
+
+<p>注：第三方文档可能未及时与最新版本同步，以 README.md 为准。</p>
 
 <ul>
 <li>CentOS/Debian/Ubuntu 下编译 dnscrypt-wrapper: <a href="http://03k.org/centos-make-dnscrypt-wrapper.html">http://03k.org/centos-make-dnscrypt-wrapper.html</a>
@@ -234,16 +242,16 @@ after the new one started.</p>
 </ul>
 
 <h1>
-<a id="see-also" class="anchor" href="#see-also" aria-hidden="true"><span class="octicon octicon-link"></span></a>See also</h1>
+<a id="see-also" class="anchor" href="#see-also" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>See also</h1>
 
 <ul>
 <li><a href="http://dnscrypt.org/">http://dnscrypt.org/</a></li>
 <li><a href="https://github.com/jedisct1/dnscrypt-proxy">https://github.com/jedisct1/dnscrypt-proxy</a></li>
-<li><a href="https://github.com/Cofyc/dnscrypt-wrapper">https://github.com/Cofyc/dnscrypt-wrapper</a></li>
+<li><a href="https://github.com/cofyc/dnscrypt-wrapper">https://github.com/cofyc/dnscrypt-wrapper</a></li>
 </ul>
 
       <footer class="site-footer">
-        <span class="site-footer-owner"><a href="https://github.com/Cofyc/dnscrypt-wrapper">Dnscrypt-wrapper</a> is maintained by <a href="https://github.com/Cofyc">Cofyc</a>.</span>
+        <span class="site-footer-owner"><a href="https://github.com/cofyc/dnscrypt-wrapper">Dnscrypt-wrapper</a> is maintained by <a href="https://github.com/cofyc">cofyc</a>.</span>
 
         <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
       </footer>
@@ -253,4 +261,3 @@ after the new one started.</p>
   
   </body>
 </html>
-
