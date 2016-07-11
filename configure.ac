@@ -66,7 +66,7 @@ fi
 
 # libsodium
 AC_ARG_WITH(sodium,
-    [AS_HELP_STRING([--with-sodium=DIR], [where to find the event library])],
+    [AS_HELP_STRING([--with-sodium=DIR], [where to find the sodium library])],
     [if test -d "$withval"; then
         LDFLAGS="$LDFLAGS -L$withval/lib"
         CFLAGS="$CFLAGS -I$withval/include"

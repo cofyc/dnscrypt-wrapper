@@ -336,6 +336,7 @@ main(int argc, const char **argv)
             exit(1);
         }
     }
+
     // setup logger
     if (c.logfile) {
         logger_logfile = c.logfile;
@@ -416,9 +417,9 @@ main(int argc, const char **argv)
         printf("* Record for tinydns:\n");
         cert_display_txt_record_tinydns(signed_cert);
         printf("\n");
-        if (!write_to_file
+        if (write_to_file
             (c.provider_cert_file, (char *)signed_cert,
-             sizeof(struct SignedCert)) == 0) {
+             sizeof(struct SignedCert)) != 0) {
             logger(LOG_ERR, "The new certificate was not saved - "
                    "Maybe the %s file already exists - please delete it first.",
                    c.provider_cert_file);
