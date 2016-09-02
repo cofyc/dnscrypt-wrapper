@@ -44,7 +44,7 @@
 #define COMPILER_ASSERT(X) (void) sizeof(char[(X) ? 1 : -1])
 
 /* Test for backtrace() */
-#if defined(__APPLE__) || defined(__linux__)
+#if defined(__APPLE__) || (defined(__linux__) && defined(__GLIBC__))
 #define HAVE_BACKTRACE 1
 #endif
 
