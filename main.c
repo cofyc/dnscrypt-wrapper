@@ -190,6 +190,7 @@ main(int argc, const char **argv)
     int gen_cert_file = 0;
     int cert_file_expire_days = CERT_FILE_EXPIRE_DAYS;
     int provider_publickey_fingerprint = 0;
+    int provider_publickey_dns_records = 0;
     int verbose = 0;
     struct argparse argparse;
     struct argparse_option options[] = {
@@ -202,6 +203,8 @@ main(int argc, const char **argv)
                     "generate provider key pair"),
         OPT_BOOLEAN(0, "show-provider-publickey-fingerprint", &provider_publickey_fingerprint,
                     "display provider public key fingerprint"),
+        OPT_BOOLEAN(0, "show-provider-publickey-dns-records", &provider_publickey_dns_records,
+                    "display records for DNS servers"),
         OPT_STRING(0, "provider-cert-file", &c.provider_cert_file,
                    "certificate file (default: ./dnscrypt.cert)"),
         OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
@@ -295,6 +298,22 @@ main(int argc, const char **argv)
             printf(" failed.\n");
             exit(1);
         }
+    }
+    if (provider_publickey_dns_records) {
+        if (read_from_file(c.provider_cert_file,
+                        (char *)&c.signed_cert,
+                        sizeof(struct SignedCert)) != 0) {
+                logger(LOG_ERR, "Unable to read %s", c.provider_cert_file);
+                exit(1);
+            }
+        logger(LOG_NOTICE, "TXT record for signed-certificate:");
+        printf("* Record for nsd:\n");
+        cert_display_txt_record(&c.signed_cert);
+        printf("\n");
+        printf("* Record for tinydns:\n");
+        cert_display_txt_record_tinydns(&c.signed_cert);
+        printf("\n");
+        exit(0);
     }
 
     if (provider_publickey_fingerprint) {
