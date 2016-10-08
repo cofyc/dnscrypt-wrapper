@@ -202,9 +202,9 @@ main(int argc, const char **argv)
         OPT_BOOLEAN(0, "gen-provider-keypair", &gen_provider_keypair,
                     "generate provider key pair"),
         OPT_BOOLEAN(0, "show-provider-publickey-fingerprint", &provider_publickey_fingerprint,
-                    "display provider public key fingerprint"),
+                    "show provider public key fingerprint"),
         OPT_BOOLEAN(0, "show-provider-publickey-dns-records", &provider_publickey_dns_records,
-                    "display records for DNS servers"),
+                    "show records for DNS servers"),
         OPT_STRING(0, "provider-cert-file", &c.provider_cert_file,
                    "certificate file (default: ./dnscrypt.cert)"),
         OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
@@ -475,7 +475,7 @@ main(int argc, const char **argv)
     if (read_from_file
         (c.provider_cert_file, (char *)&c.signed_cert,
             sizeof(struct SignedCert)) != 0) {
-        logger(LOG_ERR, "%s is not valid signed certficate.",
+        logger(LOG_ERR, "%s is not valid signed certificate.",
                c.provider_cert_file);
         exit(1);
     }

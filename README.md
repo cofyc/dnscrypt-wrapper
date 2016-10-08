@@ -101,6 +101,11 @@ an actual DNS zone you are authoritative for. In that scenario, the
 Unbound and TinyDNS are displayed by the program when generating a
 provider certificate.
 
+You can get instructions later by running:
+
+    # dnscrypt-wrapper --show-provider-publickey-dns-records
+                       --provider-cert-file <path/to/your/provider_cert_file>
+
 4) Run dnscrypt-proxy to check if it works:
 
     # dnscrypt-proxy --local-address=127.0.0.1:55 --resolver-address=127.0.0.1:443 \
@@ -157,7 +162,7 @@ The exit code is `0` if a valid certificate can be used, `2` if no valid
 certificates can be used, `3` if a timeout occurred, and `4` if a currently
 valid certificate is going to expire before the margin.
 
-The margin is always specificied in minutes.
+The margin is always specified in minutes.
 
 This can be used in a cron tab to trigger an alert before a key is
 going to expire.
