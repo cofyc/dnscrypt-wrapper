@@ -1,0 +1,9 @@
+# This file describes option set for DNSProxy-wrapper, brief explanation is below.
+# If you are generating keys by an application itself, please install correct access
+# bits on private keys. 
+
+RUNTIME_OPTS="-u proxy -d -l /dev/null"
+KEY_OPTS="--provider-cert-file=/etc/dnscrypt-wrapper/provider.crt --provider-name=default --provider-publickey-file=/etc/dnscrypt-wrapper/public.key --provider-secretkey-file=/etc/dnscrypt-wrapper/private.key --crypt-secretkey-file=/etc/dnscrypt-wrapper/crypt-secret.key"
+NETWORK_OPTS="--listen-address=127.0.0.1 --resolver-address=127.0.0.1"
+
+DAEMON_OPTS="$RUNTIME_OPTS $KEY_OPTS $NETWORK_OPTS"

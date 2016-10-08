@@ -1,0 +1,52 @@
+#!/bin/sh
+# Start/stop the DNSCrypt wrapper.
+#
+### BEGIN INIT INFO
+# Provides:          dnscrypt-wrapper
+# Required-Start:    $remote_fs $syslog $network
+# Required-Stop:     $remote_fs $syslog $network
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: DNSCrypt dns proxy wrapper
+# Description:       DNSCrypt wrapper is a secure protocol that allows
+#                    end-users to communicate with trusted DNS server when
+#                    DNSSEC or alternative query measurement tool are not 
+#                    deployed or not available at all.
+### END INIT INFO
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+DESC="DNSCrypt wrapper"
+NAME=dnscrypt-wrapper
+DAEMON=/usr/sbin/dnscrypt-wrapper
+PIDFILE=/var/run/dnscrypt-wrapper.pid
+SCRIPTNAME=/etc/init.d/"$NAME"
+
+test -f $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+[ -r /etc/default/dnscrypt-wrapper ] && . /etc/default/dnscrypt-wrapper
+
+case "$1" in
+start)  log_daemon_msg "Starting DNSCrypt wrapper"
+	start_daemon -p $PIDFILE $DAEMON $DAEMON_OPTS
+	log_end_msg $?
+	;;
+stop)   log_daemon_msg "Stopping DNSCrypt wrapper"
+	killproc -p $PIDFILE $DAEMON
+	RETVAL=$?
+	[ $RETVAL -eq 0 ] && [ -e "$PIDFILE" ] && rm -f $PIDFILE
+	log_end_msg $RETVAL
+	;;
+restart) log_daemon_msg "Restarting DNSCrypt wrapper" 
+	$0 stop
+	$0 start
+	;;
+status)
+	status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+	;;
+*)      log_action_msg "Usage: $SCRIPTNAME {start|stop|status|restart}"
+	exit 2
+	;;
+esac
+exit 0

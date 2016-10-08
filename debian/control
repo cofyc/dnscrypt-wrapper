@@ -1,0 +1,19 @@
+Source: dnscrypt-wrapper
+Section: net
+Priority: optional
+Maintainer: Andrey Korolyov <andrey@xdel.ru>
+Build-Depends: debhelper (>= 9), automake, dh-autoreconf, libsodium-dev, libevent-dev
+Standards-Version: 3.9.8
+Homepage: https://dnscrypt.org
+
+Package: dnscrypt-wrapper
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libsodium13, libevent-2.0-5
+Description: custom secured DNS query wrapper
+ DNSCrypt is a protocol that authenticates communications between a DNS client 
+ and a DNS resolver. It prevents DNS spoofing. It uses cryptographic signatures 
+ to verify that responses originate from the chosen DNS resolver and
+ haven't been tampered with.
+ .
+ This package provides server-side proxy for DNS queries to a designated upstream.
+
