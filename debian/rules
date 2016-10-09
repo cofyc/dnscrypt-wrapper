@@ -1,0 +1,35 @@
+#!/usr/bin/make -f
+
+# Enable this export to get more detailed information about what debhelper does
+#export DH_VERBOSE=1
+
+# parallel build by default on linux
+ifeq ($(DEB_HOST_ARCH_OS),linux)
+    ifeq ($(findstring parallel=,$(DEB_BUILD_OPTIONS)),)
+        export DEB_BUILD_OPTIONS+=parallel=$(shell getconf _NPROCESSORS_ONLN)
+    endif
+endif
+$(info DEB_BUILD_OPTIONS=$(DEB_BUILD_OPTIONS))
+
+# These are used for cross-compiling and for saving the configure script
+# from having to guess our platform (since we know it already)
+export DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+export DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+
+# minimise needless linking
+export DEB_LDFLAGS_MAINT_APPEND= -Wl,--as-needed
+
+CONFFLAGS_COMMON  = --host=$(DEB_HOST_GNU_TYPE) \
+                    --build=$(DEB_BUILD_GNU_TYPE) \
+                    --sysconfdir=/etc/dnscrypt-wrapper \
+                    --prefix=/usr \
+                    --infodir=\$${prefix}/share/info \
+                    --mandir=\$${prefix}/share/man \
+                    --with-event \
+                    --with-sodium
+
+%:
+	dh $@ --parallel --max-parallel=4 --with autoreconf
+
