@@ -164,6 +164,20 @@ write_to_file(const char *path, char *buf, size_t count)
 }
 
 static int
+write_to_pkey(const char *path, char *buf, size_t count)
+{
+    int fd;
+    fd = open(path, O_WRONLY | O_CREAT, 0400);
+    if (fd == -1) {
+        return -1;
+    }
+    if (safe_write(fd, buf, count, 3) != count) {
+        return -2;
+    }
+    return 0;
+}
+
+static int
 read_from_file(const char *path, char *buf, size_t count)
 {
     int fd;
@@ -277,7 +291,7 @@ main(int argc, const char **argv)
             if (write_to_file
                 (c.provider_publickey_file, (char *)provider_publickey,
                  crypto_sign_ed25519_PUBLICKEYBYTES) == 0
-                && write_to_file(c.provider_secretkey_file, (char *)provider_secretkey,
+                && write_to_pkey(c.provider_secretkey_file, (char *)provider_secretkey,
                                  crypto_sign_ed25519_SECRETKEYBYTES) == 0) {
                 printf("Keys are stored in %s & %s.\n",
                        c.provider_publickey_file, c.provider_secretkey_file);
@@ -339,7 +353,7 @@ main(int argc, const char **argv)
         if (crypto_box_keypair(c.keypairs->crypt_publickey,
                                c.keypairs->crypt_secretkey) == 0) {
             printf(" ok.\n");
-            if (write_to_file(c.crypt_secretkey_file,
+            if (write_to_pkey(c.crypt_secretkey_file,
                               (char *)c.keypairs->crypt_secretkey,
                               crypto_box_SECRETKEYBYTES) == 0) {
                 printf("Secret key stored in %s\n",
