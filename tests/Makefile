@@ -1,0 +1,4 @@
+all:
+
+test:
+	rake cucumber
