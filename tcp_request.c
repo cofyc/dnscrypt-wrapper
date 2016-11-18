@@ -109,21 +109,32 @@ self_serve_cert_file(struct context *c, struct dns_header *header,
         if (qtype == T_TXT && strcasecmp(c->provider_name, c->namebuff) == 0) {
             // reply with signed certificate
             const size_t size = 1 + sizeof(struct SignedCert);
-            static uint8_t *txt;
+            static uint8_t **txt;
 
-            if (!txt) {
-                txt = malloc(size);
-                if (!txt)
+            if(!txt) {
+                txt = calloc(c->signed_certs_count, sizeof(uint8_t *));
+                if(!txt) {
                     return -1;
-                *txt = sizeof(struct SignedCert);
-                memcpy(txt + 1, &c->signed_cert, sizeof(struct SignedCert));
+                }
+                for (int i=0; i < c->signed_certs_count; i++) {
+                    if (!*(txt + i)) {
+                        *(txt + i) = malloc(size);
+                        if (!*(txt + i))
+                            return -1;
+                        **(txt + i) = sizeof(struct SignedCert);
+                        memcpy(*(txt + i) + 1, c->signed_certs + i, sizeof(struct SignedCert));
+                    }
+                }
             }
-            if (add_resource_record
-                (header, nameoffset, &ansp, 0, NULL, T_TXT, C_IN, "t", size,
-                 txt)) {
-                anscount++;
-            } else {
-                return -1;
+
+            for (int i=0; i < c->signed_certs_count; i++) {
+                if (add_resource_record
+                    (header, nameoffset, &ansp, 0, NULL, T_TXT, C_IN, "t", size,
+                     *(txt + i))) {
+                    anscount++;
+                } else {
+                    return -1;
+                }
             }
             /* done all questions, set up header and return length of result */
             /* clear authoritative and truncated flags, set QR flag */

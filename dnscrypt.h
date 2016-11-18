@@ -133,7 +133,8 @@ struct context {
     char *provider_publickey_file;
     char *provider_secretkey_file;
     char *provider_cert_file;
-    struct SignedCert signed_cert;
+    struct SignedCert *signed_certs;
+    size_t signed_certs_count;
     uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
     uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
     char *crypt_secretkey_file;
