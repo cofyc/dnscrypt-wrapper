@@ -46,10 +46,18 @@ sockaddr_from_ip_and_port(struct sockaddr_storage *const sockaddr,
         return 0;
     }
     if (has_columns != 0 && has_brackets == 0) {
-        evutil_snprintf(sockaddr_port, sizeof sockaddr_port, "[%s]:%s",
-                        ip, port);
+        if (strcmp(port, "0")) {
+            evutil_snprintf(sockaddr_port, sizeof sockaddr_port, "[%s]:%s",
+                            ip, port);
+        } else {
+            evutil_snprintf(sockaddr_port, sizeof sockaddr_port, "[%s]", ip);
+        }
     } else {
-        evutil_snprintf(sockaddr_port, sizeof sockaddr_port, "%s:%s", ip, port);
+        if (strcmp(port, "0")) {
+            evutil_snprintf(sockaddr_port, sizeof sockaddr_port, "%s:%s", ip, port);
+        } else {
+            evutil_snprintf(sockaddr_port, sizeof sockaddr_port, "%s", ip);
+        }
     }
     sockaddr_len_int = (int)sizeof *sockaddr;
     if (evutil_parse_sockaddr_port(sockaddr_port, (struct sockaddr *)sockaddr,
@@ -276,6 +284,8 @@ main(int argc, const char **argv)
                    "local address to listen (default: 0.0.0.0:53)"),
         OPT_STRING('r', "resolver-address", &c.resolver_address,
                    "upstream dns resolver server (<address:port>)"),
+        OPT_STRING('o', "outgoing-address", &c.outgoing_address,
+                   "address to use to connect to dns resolver server (<address:port>)"),
         OPT_BOOLEAN('U', "unauthenticated", &c.allow_not_dnscrypted,
                     "allow and forward unauthenticated queries (default: off)"),
         OPT_STRING('u', "user", &c.user, "run as given user"),
@@ -552,6 +562,14 @@ main(int argc, const char **argv)
                                   &c.resolver_sockaddr_len,
                                   c.resolver_address,
                                   "53", "Unsupported resolver address") != 0) {
+        exit(1);
+    }
+
+    if (c.outgoing_address &&
+        sockaddr_from_ip_and_port(&c.outgoing_sockaddr,
+                                  &c.outgoing_sockaddr_len,
+                                  c.outgoing_address,
+                                  "0", "Unsupported outgoing address") != 0) {
         exit(1);
     }
 

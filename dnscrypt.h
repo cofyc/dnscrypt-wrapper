@@ -101,10 +101,13 @@ typedef struct KeyPair_ {
 struct context {
     struct sockaddr_storage local_sockaddr;
     struct sockaddr_storage resolver_sockaddr;
+    struct sockaddr_storage outgoing_sockaddr;
     ev_socklen_t local_sockaddr_len;
     ev_socklen_t resolver_sockaddr_len;
+    ev_socklen_t outgoing_sockaddr_len;
     const char *resolver_address;
     const char *listen_address;
+    const char *outgoing_address;
     struct evconnlistener *tcp_conn_listener;
     struct event *tcp_accept_timer;
     struct event *udp_listener_event;

@@ -42,6 +42,7 @@ tcp_tune(evutil_socket_t handle)
     if (handle == -1) {
         return;
     }
+
 #ifdef TCP_QUICKACK
     setsockopt(handle, IPPROTO_TCP, TCP_QUICKACK, (void *)(int[]) {
                1}, sizeof(int));
@@ -334,6 +335,7 @@ tcp_connection_cb(struct evconnlistener *const tcp_conn_listener,
                   const int client_sockaddr_len_int, void *const context)
 {
     logger(LOG_DEBUG, "Accepted a tcp connection.");
+    evutil_socket_t fd;
     struct context *c = context;
     TCPRequest *tcp_request;
 
@@ -354,14 +356,34 @@ tcp_connection_cb(struct evconnlistener *const tcp_conn_listener,
         free(tcp_request);
         return;
     }
-    tcp_request->proxy_resolver_bev = bufferevent_socket_new(c->event_loop, -1,
+
+    fd = socket(c->resolver_sockaddr.ss_family, SOCK_STREAM, IPPROTO_TCP);
+    tcp_tune(fd);
+    if (evutil_make_socket_nonblocking(fd)) {
+        logger(LOG_WARNING, "Could not make socket %d non-blocking", fd);
+    }
+    tcp_request->proxy_resolver_bev = bufferevent_socket_new(c->event_loop, fd,
                                                              BEV_OPT_CLOSE_ON_FREE);
+
     if (tcp_request->proxy_resolver_bev == NULL) {
         bufferevent_free(tcp_request->client_proxy_bev);
         tcp_request->client_proxy_bev = NULL;
         free(tcp_request);
         return;
     }
+
+    /* Bind source IP:port if --outgoing-address is provided */
+    if(c->outgoing_address &&
+        bind(fd,
+             (struct sockaddr *)&c->outgoing_sockaddr,
+             c->outgoing_sockaddr_len) != 0) {
+        logger(LOG_ERR, "Unable to bind (TCP) [%s]",
+            evutil_socket_error_to_string(evutil_socket_geterror
+                (tcp_request->proxy_resolver_bev)));
+        tcp_request_kill(tcp_request);
+        return;
+    }
+
     c->connections++;
     TAILQ_INSERT_TAIL(&c->tcp_request_queue, tcp_request, queue);
     memset(&tcp_request->status, 0, sizeof tcp_request->status);
