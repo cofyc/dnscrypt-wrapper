@@ -212,4 +212,14 @@ int dnscrypt_server_curve(struct context *c,
                           uint8_t nmkey[crypto_box_BEFORENMBYTES],
                           uint8_t *const buf, size_t * const lenp,
                           const size_t max_len);
+/**
+ * Given a DNS request,iterate over the question sections.
+ * If a TXT request for provider name is made, adds the certs as TXT records
+ * and return 0. dns_query_len is updated to reflect the size of the DNS packet.
+ * return non-zero in case of failure.
+ * */
+int dnscrypt_self_serve_cert_file(struct context *c,
+                                  struct dns_header *header,
+                                  size_t *dns_query_len);
+
 #endif
