@@ -19,3 +19,5 @@ before_script:
  - cd ..
 script:
  - make
+ - sudo bash travis_setup_test.sh
+ - cd tests && bundle install && make test

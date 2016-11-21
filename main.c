@@ -193,6 +193,49 @@ read_from_file(const char *path, char *buf, size_t count)
     return 0;
 }
 
+static int
+parse_cert_files(struct context *c)
+{
+    char *provider_cert_files, *provider_cert_file;
+    size_t signed_cert_id;
+
+    c->signed_certs_count = 0U;
+    if ((provider_cert_files = strdup(c->provider_cert_file)) == NULL) {
+        logger(LOG_ERR, "Could not allocate memory!");
+        return 1;
+    }
+
+    for (provider_cert_file = strtok(provider_cert_files, ",");
+         provider_cert_file != NULL;
+         provider_cert_file = strtok(NULL, ",")) {
+        c->signed_certs_count++;
+    }
+
+    if (c->signed_certs_count <= 0U) {
+        free(provider_cert_files);
+        return 0;
+    }
+    memcpy(provider_cert_files, c->provider_cert_file, strlen(c->provider_cert_file) + 1U);
+    c->signed_certs = sodium_allocarray(c->signed_certs_count, sizeof *c->signed_certs);
+    signed_cert_id = 0U;
+
+    for (provider_cert_file = strtok(provider_cert_files, ",");
+         provider_cert_file != NULL;
+         provider_cert_file = strtok(NULL, ",")) {
+
+        if (read_from_file
+            (provider_cert_file, (char *)(c->signed_certs + signed_cert_id),
+                sizeof(struct SignedCert)) != 0) {
+            logger(LOG_ERR, "%s is not valid signed certificate.",
+                   provider_cert_file);
+            return 1;
+        }
+        signed_cert_id++;
+    }
+    free(provider_cert_files);
+    return 0;
+}
+
 int
 main(int argc, const char **argv)
 {
@@ -314,19 +357,20 @@ main(int argc, const char **argv)
         }
     }
     if (provider_publickey_dns_records) {
-        if (read_from_file(c.provider_cert_file,
-                        (char *)&c.signed_cert,
-                        sizeof(struct SignedCert)) != 0) {
-                logger(LOG_ERR, "Unable to read %s", c.provider_cert_file);
-                exit(1);
-            }
+        if (parse_cert_files(&c)) {
+            exit(1);
+        }
         logger(LOG_NOTICE, "TXT record for signed-certificate:");
         printf("* Record for nsd:\n");
-        cert_display_txt_record(&c.signed_cert);
-        printf("\n");
+        for(int i=0; i < c.signed_certs_count; i++){
+            cert_display_txt_record(c.signed_certs + i);
+            printf("\n");
+        }
         printf("* Record for tinydns:\n");
-        cert_display_txt_record_tinydns(&c.signed_cert);
-        printf("\n");
+        for(int i=0; i < c.signed_certs_count; i++){
+            cert_display_txt_record_tinydns(c.signed_certs + i);
+            printf("\n");
+        }
         exit(0);
     }
 
@@ -486,12 +530,15 @@ main(int argc, const char **argv)
         logger(LOG_ERR, "You must specify --provider-name");
         exit(1);
     }
-    if (read_from_file
-        (c.provider_cert_file, (char *)&c.signed_cert,
-            sizeof(struct SignedCert)) != 0) {
-        logger(LOG_ERR, "%s is not valid signed certificate.",
-               c.provider_cert_file);
+
+    if (parse_cert_files(&c)) {
         exit(1);
+    }
+
+    if (c.signed_certs_count <= 0U) {
+        logger(LOG_ERR, "You must specify --provider-cert-file.\n\n");
+        argparse_usage(&argparse);
+        exit(0);
     }
 
     if (c.daemonize) {
