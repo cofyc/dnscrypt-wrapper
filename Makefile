@@ -1,4 +1,3 @@
-SUBDIRS = tests
 # The default target of this Makefile is...
 all::
 
