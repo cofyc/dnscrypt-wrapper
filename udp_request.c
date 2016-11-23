@@ -531,6 +531,18 @@ udp_listener_bind(struct context *c)
     evutil_make_socket_nonblocking(c->udp_resolver_handle);
     udp_tune(c->udp_resolver_handle);
 
+    /* Bind source IP:port if --outgoing-address is provided */
+    if(c->outgoing_address &&
+       bind(c->udp_resolver_handle, (struct sockaddr *)&c->outgoing_sockaddr,
+            c->outgoing_sockaddr_len) != 0) {
+        logger(LOG_ERR, "Unable to bind (UDP) [%s]",
+            evutil_socket_error_to_string(evutil_socket_geterror
+                                          (c->udp_resolver_handle)));
+        evutil_closesocket(c->udp_resolver_handle);
+        c->udp_resolver_handle = -1;
+        return -1;
+    }
+
     RB_INIT(&c->udp_request_queue);
 
     return 0;
