@@ -1,64 +1,14 @@
 #ifndef DNSCRYPT_H
 #define DNSCRYPT_H
 
-#include "compat.h"
-#include "tree.h"
-#include "debug.h"
-#include <event2/event.h>
-#include <event2/listener.h>
-#include <event2/bufferevent.h>
-#include <event2/buffer.h>
+#include <assert.h>
+#include <ctype.h>
+#include <string.h>
+
 #include <event2/util.h>
 #include <sodium.h>
 
-#if SODIUM_LIBRARY_VERSION_MAJOR < 7
-# define sodium_allocarray(C, S) calloc(C, S)
-# define sodium_malloc(S) malloc(S)
-# define sodium_free(P) free(P)
-#endif
-
-#define DNS_QUERY_TIMEOUT 10
-
-#define DNS_MAX_PACKET_SIZE_UDP_RECV (65536U - 20U - 8U)
-#define DNS_MAX_PACKET_SIZE_UDP_SEND 512U
-
-#if DNS_MAX_PACKET_SIZE_UDP_RECV > DNS_MAX_PACKET_SIZE_UDP_SEND
-# define DNS_MAX_PACKET_SIZE_UDP DNS_MAX_PACKET_SIZE_UDP_RECV
-#else
-# define DNS_MAX_PACKET_SIZE_UDP DNS_MAX_PACKET_SIZE_UDP_SEND
-#endif
-
-#ifndef DNS_DEFAULT_STANDARD_DNS_PORT
-# define DNS_DEFAULT_STANDARD_DNS_PORT "53"
-#endif
-#ifndef DNS_DEFAULT_LOCAL_PORT
-# define DNS_DEFAULT_LOCAL_PORT DNS_DEFAULT_STANDARD_DNS_PORT
-#endif
-#ifndef DNS_DEFAULT_RESOLVER_PORT
-# define DNS_DEFAULT_RESOLVER_PORT "443"
-#endif
-
-#define DNS_HEADER_SIZE  12U
-#define DNS_FLAGS_TC      2U
-#define DNS_FLAGS_QR    128U
-#define DNS_FLAGS2_RA   128U
-
-#define DNS_CLASS_IN      1U
-#define DNS_TYPE_TXT     16U
-#define DNS_TYPE_OPT     41U
-
-#define DNS_OFFSET_QUESTION DNS_HEADER_SIZE
-#define DNS_OFFSET_FLAGS    2U
-#define DNS_OFFSET_FLAGS2   3U
-#define DNS_OFFSET_QDCOUNT  4U
-#define DNS_OFFSET_ANCOUNT  6U
-#define DNS_OFFSET_NSCOUNT  8U
-#define DNS_OFFSET_ARCOUNT 10U
-
-#define DNS_OFFSET_EDNS_TYPE         0U
-#define DNS_OFFSET_EDNS_PAYLOAD_SIZE 2U
-
-#define DNS_DEFAULT_EDNS_PAYLOAD_SIZE 1252U
+#define COMPILER_ASSERT(X) (void) sizeof(char[(X) ? 1 : -1])
 
 #define DNSCRYPT_MAGIC_HEADER_LEN 8U
 #define DNSCRYPT_MAGIC_RESPONSE  "r6fnvWj8"
@@ -77,14 +27,6 @@
 
 #define DEFAULT_PROVIDER_NAME "2.cert.dnscrypt.org"
 
-#include "edns.h"
-#include "udp_request.h"
-#include "tcp_request.h"
-#include "rfc1035.h"
-#include "logger.h"
-#include "safe_rw.h"
-#include "cert.h"
-
 #define DNSCRYPT_QUERY_HEADER_SIZE \
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_PUBLICKEYBYTES + crypto_box_HALF_NONCEBYTES + crypto_box_MACBYTES)
 #define DNSCRYPT_RESPONSE_HEADER_SIZE \
@@ -93,61 +35,26 @@
 #define DNSCRYPT_REPLY_HEADER_SIZE \
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_HALF_NONCEBYTES * 2 + crypto_box_MACBYTES)
 
+#include "cert.h"
+
 typedef struct KeyPair_ {
     uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
     uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
 } KeyPair;
 
-struct context {
-    struct sockaddr_storage local_sockaddr;
-    struct sockaddr_storage resolver_sockaddr;
-    struct sockaddr_storage outgoing_sockaddr;
-    ev_socklen_t local_sockaddr_len;
-    ev_socklen_t resolver_sockaddr_len;
-    ev_socklen_t outgoing_sockaddr_len;
-    const char *resolver_address;
-    const char *listen_address;
-    const char *outgoing_address;
-    struct evconnlistener *tcp_conn_listener;
-    struct event *tcp_accept_timer;
-    struct event *udp_listener_event;
-    struct event *udp_resolver_event;
-    evutil_socket_t udp_listener_handle;
-    evutil_socket_t udp_resolver_handle;
-    TCPRequestQueue tcp_request_queue;
-    UDPRequestQueue udp_request_queue;
-    struct event_base *event_loop;
-    unsigned int connections;
-    size_t edns_payload_size;
-
-    /* Domain name shared buffer. */
-    char namebuff[MAXDNAME];
-
-    /* Process stuff. */
-    bool daemonize;
-    bool allow_not_dnscrypted;
-    char *pidfile;
-    char *user;
-    uid_t user_id;
-    gid_t user_group;
-    char *user_dir;
-    char *logfile;
+struct dnsc_server_context {
     char *provider_name;
-    char *provider_publickey_file;
-    char *provider_secretkey_file;
-    char *provider_cert_file;
     struct SignedCert *signed_certs;
     size_t signed_certs_count;
     uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
     uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
-    char *crypt_secretkey_file;
     KeyPair *keypairs;
     size_t keypairs_count;
     uint64_t nonce_ts_last;
     unsigned char hash_key[crypto_shorthash_KEYBYTES];
 };
 
-const KeyPair * find_keypair(const struct context *c,
+const KeyPair * find_keypair(const struct dnsc_server_context *c,
                              const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
                              const size_t dns_query_len);
 int dnscrypt_cmp_client_nonce(const uint8_t
@@ -206,23 +113,13 @@ struct dnscrypt_query_header {
     uint8_t mac[crypto_box_MACBYTES];
 };
 
-int dnscrypt_server_uncurve(struct context *c, const KeyPair *keypair,
+int dnscrypt_server_uncurve(struct dnsc_server_context *c, const KeyPair *keypair,
                             uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                             uint8_t nmkey[crypto_box_BEFORENMBYTES],
                             uint8_t *const buf, size_t * const lenp);
-int dnscrypt_server_curve(struct context *c,
+int dnscrypt_server_curve(struct dnsc_server_context *c,
                           uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                           uint8_t nmkey[crypto_box_BEFORENMBYTES],
                           uint8_t *const buf, size_t * const lenp,
                           const size_t max_len);
-/**
- * Given a DNS request,iterate over the question sections.
- * If a TXT request for provider name is made, adds the certs as TXT records
- * and return 0. dns_query_len is updated to reflect the size of the DNS packet.
- * return non-zero in case of failure.
- * */
-int dnscrypt_self_serve_cert_file(struct context *c,
-                                  struct dns_header *header,
-                                  size_t *dns_query_len);
-
 #endif

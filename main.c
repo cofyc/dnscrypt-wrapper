@@ -1,4 +1,4 @@
-#include "dnscrypt.h"
+#include "dnscrypt-wrapper.h"
 #include "argparse/argparse.h"
 #include "version.h"
 #include "pidfile.h"
@@ -207,7 +207,7 @@ parse_cert_files(struct context *c)
     char *provider_cert_files, *provider_cert_file;
     size_t signed_cert_id;
 
-    c->signed_certs_count = 0U;
+    c->dnsc.signed_certs_count = 0U;
     if ((provider_cert_files = strdup(c->provider_cert_file)) == NULL) {
         logger(LOG_ERR, "Could not allocate memory!");
         return 1;
@@ -216,15 +216,15 @@ parse_cert_files(struct context *c)
     for (provider_cert_file = strtok(provider_cert_files, ",");
          provider_cert_file != NULL;
          provider_cert_file = strtok(NULL, ",")) {
-        c->signed_certs_count++;
+        c->dnsc.signed_certs_count++;
     }
 
-    if (c->signed_certs_count <= 0U) {
+    if (c->dnsc.signed_certs_count <= 0U) {
         free(provider_cert_files);
         return 0;
     }
     memcpy(provider_cert_files, c->provider_cert_file, strlen(c->provider_cert_file) + 1U);
-    c->signed_certs = sodium_allocarray(c->signed_certs_count, sizeof *c->signed_certs);
+    c->dnsc.signed_certs = sodium_allocarray(c->dnsc.signed_certs_count, sizeof *c->dnsc.signed_certs);
     signed_cert_id = 0U;
 
     for (provider_cert_file = strtok(provider_cert_files, ",");
@@ -232,7 +232,7 @@ parse_cert_files(struct context *c)
          provider_cert_file = strtok(NULL, ",")) {
 
         if (read_from_file
-            (provider_cert_file, (char *)(c->signed_certs + signed_cert_id),
+            (provider_cert_file, (char *)(c->dnsc.signed_certs + signed_cert_id),
                 sizeof(struct SignedCert)) != 0) {
             logger(LOG_ERR, "%s is not valid signed certificate.",
                    provider_cert_file);
@@ -272,7 +272,7 @@ main(int argc, const char **argv)
                     "show records for DNS servers"),
         OPT_STRING(0, "provider-cert-file", &c.provider_cert_file,
                    "certificate file (default: ./dnscrypt.cert)"),
-        OPT_STRING(0, "provider-name", &c.provider_name, "provider name"),
+        OPT_STRING(0, "provider-name", &c.dnsc.provider_name, "provider name"),
         OPT_STRING(0, "provider-publickey-file", &c.provider_publickey_file,
                    "provider public key file (default: ./public.key)"),
         OPT_STRING(0, "provider-secretkey-file", &c.provider_secretkey_file,
@@ -323,7 +323,7 @@ main(int argc, const char **argv)
     if (!c.provider_cert_file)
         c.provider_cert_file = "dnscrypt.cert";
 
-    c.keypairs = NULL;
+    c.dnsc.keypairs = NULL;
 
     if (gen_provider_keypair) {
         uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
@@ -372,13 +372,13 @@ main(int argc, const char **argv)
         }
         logger(LOG_NOTICE, "TXT record for signed-certificate:");
         printf("* Record for nsd:\n");
-        for(int i=0; i < c.signed_certs_count; i++){
-            cert_display_txt_record(c.signed_certs + i);
+        for(int i=0; i < c.dnsc.signed_certs_count; i++){
+            cert_display_txt_record(c.dnsc.signed_certs + i);
             printf("\n");
         }
         printf("* Record for tinydns:\n");
-        for(int i=0; i < c.signed_certs_count; i++){
-            cert_display_txt_record_tinydns(c.signed_certs + i);
+        for(int i=0; i < c.dnsc.signed_certs_count; i++){
+            cert_display_txt_record_tinydns(c.dnsc.signed_certs + i);
             printf("\n");
         }
         exit(0);
@@ -388,12 +388,12 @@ main(int argc, const char **argv)
         char fingerprint[80];
 
         if (read_from_file(c.provider_publickey_file,
-                           (char *)c.provider_publickey,
+                           (char *)c.dnsc.provider_publickey,
                            crypto_sign_ed25519_PUBLICKEYBYTES) != 0) {
             logger(LOG_ERR, "Unable to read %s", c.provider_publickey_file);
             exit(1);
         }
-        dnscrypt_key_to_fingerprint(fingerprint, c.provider_publickey);
+        dnscrypt_key_to_fingerprint(fingerprint, c.dnsc.provider_publickey);
         printf("Provider public key fingerprint : %s\n",
                fingerprint);
         exit(0);
@@ -402,13 +402,13 @@ main(int argc, const char **argv)
     if (gen_crypt_keypair) {
         printf("Generate crypt key pair...");
         fflush(stdout);
-        if ((c.keypairs = sodium_malloc(sizeof *c.keypairs)) == NULL)
+        if ((c.dnsc.keypairs = sodium_malloc(sizeof *c.dnsc.keypairs)) == NULL)
             exit(1);
-        if (crypto_box_keypair(c.keypairs->crypt_publickey,
-                               c.keypairs->crypt_secretkey) == 0) {
+        if (crypto_box_keypair(c.dnsc.keypairs->crypt_publickey,
+                               c.dnsc.keypairs->crypt_secretkey) == 0) {
             printf(" ok.\n");
             if (write_to_pkey(c.crypt_secretkey_file,
-                              (char *)c.keypairs->crypt_secretkey,
+                              (char *)c.dnsc.keypairs->crypt_secretkey,
                               crypto_box_SECRETKEYBYTES) == 0) {
                 printf("Secret key stored in %s\n",
                        c.crypt_secretkey_file);
@@ -436,21 +436,21 @@ main(int argc, const char **argv)
     char *crypt_secretkey_files, *crypt_secretkey_file;
     size_t keypair_id;
 
-    c.keypairs_count = 0U;
+    c.dnsc.keypairs_count = 0U;
     if ((crypt_secretkey_files = strdup(c.crypt_secretkey_file)) == NULL)
         exit(1);
     for (crypt_secretkey_file = strtok(crypt_secretkey_files, ",");
          crypt_secretkey_file != NULL;
          crypt_secretkey_file = strtok(NULL, ",")) {
-        c.keypairs_count++;
+        c.dnsc.keypairs_count++;
     }
-    if (c.keypairs_count <= 0U) {
+    if (c.dnsc.keypairs_count <= 0U) {
         logger(LOG_ERR, "You must specify --crypt-secretkey-file.\n\n");
         argparse_usage(&argparse);
         exit(0);
     }
     memcpy(crypt_secretkey_files, c.crypt_secretkey_file, strlen(c.crypt_secretkey_file) + 1U);
-    c.keypairs = sodium_allocarray(c.keypairs_count, sizeof *c.keypairs);
+    c.dnsc.keypairs = sodium_allocarray(c.dnsc.keypairs_count, sizeof *c.dnsc.keypairs);
     keypair_id = 0U;
     for (crypt_secretkey_file = strtok(crypt_secretkey_files, ",");
          crypt_secretkey_file != NULL;
@@ -458,15 +458,15 @@ main(int argc, const char **argv)
         char fingerprint[80];
 
         if (read_from_file(crypt_secretkey_file,
-                           (char *)c.keypairs[keypair_id].crypt_secretkey,
+                           (char *)c.dnsc.keypairs[keypair_id].crypt_secretkey,
                            crypto_box_SECRETKEYBYTES) != 0) {
             logger(LOG_ERR, "Unable to read %s", crypt_secretkey_file);
             exit(1);
         }
-        if (crypto_scalarmult_base(c.keypairs[keypair_id].crypt_publickey,
-                                   c.keypairs[keypair_id].crypt_secretkey) != 0)
+        if (crypto_scalarmult_base(c.dnsc.keypairs[keypair_id].crypt_publickey,
+                                   c.dnsc.keypairs[keypair_id].crypt_secretkey) != 0)
             exit(1);
-        dnscrypt_key_to_fingerprint(fingerprint, c.keypairs[keypair_id].crypt_publickey);
+        dnscrypt_key_to_fingerprint(fingerprint, c.dnsc.keypairs[keypair_id].crypt_publickey);
         logger(LOG_INFO, "Crypt public key fingerprint for %s: %s",
                crypt_secretkey_file, fingerprint);
         keypair_id++;
@@ -475,15 +475,15 @@ main(int argc, const char **argv)
 
     // generate signed certificate
     if (gen_cert_file) {
-        if (c.keypairs_count != 1U) {
+        if (c.dnsc.keypairs_count != 1U) {
             logger(LOG_ERR, "A certificate can only store a single key");
             exit(1);
         }
         if (read_from_file
-            (c.provider_publickey_file, (char *)c.provider_publickey,
+            (c.provider_publickey_file, (char *)c.dnsc.provider_publickey,
              crypto_sign_ed25519_PUBLICKEYBYTES) == 0
             && read_from_file(c.provider_secretkey_file,
-                              (char *)c.provider_secretkey,
+                              (char *)c.dnsc.provider_secretkey,
                               crypto_sign_ed25519_SECRETKEYBYTES) == 0) {
         } else {
             logger(LOG_ERR, "Unable to load master keys from %s and %s.",
@@ -492,8 +492,8 @@ main(int argc, const char **argv)
         }
         logger(LOG_NOTICE, "Generating pre-signed certificate.");
         struct SignedCert *signed_cert =
-            cert_build_cert(c.keypairs->crypt_publickey, cert_file_expire_days);
-        if (!signed_cert || cert_sign(signed_cert, c.provider_secretkey) != 0) {
+            cert_build_cert(c.dnsc.keypairs->crypt_publickey, cert_file_expire_days);
+        if (!signed_cert || cert_sign(signed_cert, c.dnsc.provider_secretkey) != 0) {
             logger(LOG_NOTICE, "Failed.");
             exit(1);
         }
@@ -536,7 +536,7 @@ main(int argc, const char **argv)
         c.user_dir = strdup(pw->pw_dir);
     }
 
-    if (!c.provider_name) {
+    if (!c.dnsc.provider_name) {
         logger(LOG_ERR, "You must specify --provider-name");
         exit(1);
     }
@@ -545,7 +545,7 @@ main(int argc, const char **argv)
         exit(1);
     }
 
-    if (c.signed_certs_count <= 0U) {
+    if (c.dnsc.signed_certs_count <= 0U) {
         logger(LOG_ERR, "You must specify --provider-cert-file.\n\n");
         argparse_usage(&argparse);
         exit(0);
@@ -580,7 +580,7 @@ main(int argc, const char **argv)
         exit(1);
     }
 
-    randombytes_buf(c.hash_key, sizeof c.hash_key);
+    randombytes_buf(c.dnsc.hash_key, sizeof c.dnsc.hash_key);
 
     if ((c.event_loop = event_base_new()) == NULL) {
         logger(LOG_ERR, "Unable to initialize the event loop.");

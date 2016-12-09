@@ -1,7 +1,7 @@
 #ifndef UDP_REQUEST_H
 #define UDP_REQUEST_H
 
-#include "dnscrypt.h"
+#include "dnscrypt-wrapper.h"
 
 struct context;
 

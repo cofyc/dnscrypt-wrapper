@@ -1,4 +1,4 @@
-#include "dnscrypt.h"
+#include "dnscrypt-wrapper.h"
 
 static void
 tcp_request_kill(TCPRequest *const tcp_request)
@@ -181,13 +181,13 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
-    debug_assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
+    debug_assert(sizeof c->dnsc.keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
     if ((keypair =
-         find_keypair(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
+         find_keypair(&c->dnsc, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
         tcp_request->is_dnscrypted = false;
     } else {
         if (dnscrypt_server_uncurve
-            (c, keypair, tcp_request->client_nonce, tcp_request->nmkey, dns_query,
+            (&c->dnsc, keypair, tcp_request->client_nonce, tcp_request->nmkey, dns_query,
              &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             tcp_request_kill(tcp_request);
@@ -307,7 +307,7 @@ resolver_proxy_read_cb(struct bufferevent *const proxy_resolver_bev,
 
     if (tcp_request->is_dnscrypted) {
         if (dnscrypt_server_curve
-            (c, tcp_request->client_nonce, tcp_request->nmkey, dns_reply,
+            (&c->dnsc, tcp_request->client_nonce, tcp_request->nmkey, dns_reply,
              &dns_reply_len, max_len) != 0) {
             logger(LOG_ERR, "Curving reply failed.");
             return;

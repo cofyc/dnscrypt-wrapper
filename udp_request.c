@@ -1,5 +1,5 @@
 
-#include "dnscrypt.h"
+#include "dnscrypt-wrapper.h"
 
 typedef struct SendtoWithRetryCtx_ {
     void (*cb) (UDPRequest *udp_request);
@@ -308,14 +308,14 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
-    assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
+    assert(sizeof c->dnsc.keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
 
     if ((keypair =
-         find_keypair(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
+         find_keypair(&c->dnsc, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
         udp_request->is_dnscrypted = false;
     } else {
         if (dnscrypt_server_uncurve
-            (c, keypair, udp_request->client_nonce, udp_request->nmkey, dns_query,
+            (&c->dnsc, keypair, udp_request->client_nonce, udp_request->nmkey, dns_query,
              &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             udp_request_kill(udp_request);
@@ -337,7 +337,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
         }
     }
     udp_request->id = ntohs(header->id);
-    if (questions_hash(&udp_request->hash, header, dns_query_len, c->namebuff, c->hash_key) != 0) {
+    if (questions_hash(&udp_request->hash, header, dns_query_len, c->namebuff, c->dnsc.hash_key) != 0) {
         logger(LOG_WARNING, "Received a suspicious query from the client");
         udp_request_kill(udp_request);
         return;
@@ -455,7 +455,7 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
     struct dns_header *header = (struct dns_header *)dns_reply;
     uint16_t id = ntohs(header->id);
     uint64_t hash;
-    if (questions_hash(&hash, header, dns_reply_len, c->namebuff, c->hash_key) != 0) {
+    if (questions_hash(&hash, header, dns_reply_len, c->namebuff, c->dnsc.hash_key) != 0) {
         logger(LOG_ERR, "Received an invalid response from the server");
         return;
     }
@@ -474,7 +474,7 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
 
     if (udp_request->is_dnscrypted) {
         if (dnscrypt_server_curve
-            (c, udp_request->client_nonce, udp_request->nmkey, dns_reply,
+            (&c->dnsc, udp_request->client_nonce, udp_request->nmkey, dns_reply,
              &dns_reply_len, max_len) != 0) {
             logger(LOG_ERR, "Curving reply failed.");
             return;

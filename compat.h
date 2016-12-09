@@ -41,7 +41,6 @@
 #include <netinet/in.h>
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[1]))
-#define COMPILER_ASSERT(X) (void) sizeof(char[(X) ? 1 : -1])
 
 /* Test for backtrace() */
 #if defined(__APPLE__) || (defined(__linux__) && defined(__GLIBC__))
