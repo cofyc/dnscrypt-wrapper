@@ -98,6 +98,18 @@ typedef struct KeyPair_ {
     uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
 } KeyPair;
 
+struct dnsc_server_context {
+    char *provider_name;
+    struct SignedCert *signed_certs;
+    size_t signed_certs_count;
+    uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
+    uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
+    KeyPair *keypairs;
+    size_t keypairs_count;
+    uint64_t nonce_ts_last;
+    unsigned char hash_key[crypto_shorthash_KEYBYTES];
+};
+
 struct context {
     struct sockaddr_storage local_sockaddr;
     struct sockaddr_storage resolver_sockaddr;
@@ -132,19 +144,13 @@ struct context {
     gid_t user_group;
     char *user_dir;
     char *logfile;
-    char *provider_name;
+
     char *provider_publickey_file;
     char *provider_secretkey_file;
     char *provider_cert_file;
-    struct SignedCert *signed_certs;
-    size_t signed_certs_count;
-    uint8_t provider_publickey[crypto_sign_ed25519_PUBLICKEYBYTES];
-    uint8_t provider_secretkey[crypto_sign_ed25519_SECRETKEYBYTES];
     char *crypt_secretkey_file;
-    KeyPair *keypairs;
-    size_t keypairs_count;
-    uint64_t nonce_ts_last;
-    unsigned char hash_key[crypto_shorthash_KEYBYTES];
+
+    struct dnsc_server_context dnsc;
 };
 
 const KeyPair * find_keypair(const struct context *c,

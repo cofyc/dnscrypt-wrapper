@@ -5,13 +5,13 @@ find_keypair(const struct context *c,
              const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
              const size_t dns_query_len)
 {
-    const KeyPair *keypairs = c->keypairs;
+    const KeyPair *keypairs = c->dnsc.keypairs;
     size_t i;
 
     if (dns_query_len <= DNSCRYPT_QUERY_HEADER_SIZE) {
         return NULL;
     }
-    for (i = 0U; i < c->keypairs_count; i++) {
+    for (i = 0U; i < c->dnsc.keypairs_count; i++) {
         if (memcmp(keypairs[i].crypt_publickey, magic_query,
                    DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
             return &keypairs[i];
@@ -244,10 +244,10 @@ add_server_nonce(struct context *c, uint8_t *nonce)
     uint64_t tsn;
     uint32_t suffix;
     ts = dnscrypt_hrtime();
-    if (ts <= c->nonce_ts_last) {
-        ts = c->nonce_ts_last + 1;
+    if (ts <= c->dnsc.nonce_ts_last) {
+        ts = c->dnsc.nonce_ts_last + 1;
     }
-    c->nonce_ts_last = ts;
+    c->dnsc.nonce_ts_last = ts;
     tsn = (ts << 10) | (randombytes_random() & 0x3ff);
 #if (BYTE_ORDER == LITTLE_ENDIAN)
     tsn =
@@ -286,7 +286,7 @@ dnscrypt_server_curve(struct context *c,
     len =
         dnscrypt_pad(boxed + crypto_box_MACBYTES, len,
                      max_len - DNSCRYPT_REPLY_HEADER_SIZE, nonce,
-                     c->keypairs[0].crypt_secretkey);
+                     c->dnsc.keypairs[0].crypt_secretkey);
     memset(boxed - crypto_box_BOXZEROBYTES, 0, crypto_box_ZEROBYTES);
 
     // add server nonce extension
@@ -330,7 +330,8 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
             return -1;
         }
         GETSHORT(qtype, p);
-        if (qtype == T_TXT && strcasecmp(c->provider_name, c->namebuff) == 0) {
+        if (qtype == T_TXT &&
+            strcasecmp(c->dnsc.provider_name, c->namebuff) == 0) {
             // reply with signed certificate
             const size_t size = 1 + sizeof(struct SignedCert);
             static uint8_t **txt;
@@ -338,20 +339,23 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
             // Allocate static buffers containing the certificates.
             // This is only called once the first time a TXT request is made.
             if(!txt) {
-                txt = calloc(c->signed_certs_count, sizeof(uint8_t *));
+                txt = calloc(c->dnsc.signed_certs_count,
+                             sizeof(uint8_t *));
                 if(!txt) {
                     return -1;
                 }
-                for (int i=0; i < c->signed_certs_count; i++) {
+                for (int i=0; i < c->dnsc.signed_certs_count; i++) {
                     *(txt + i) = malloc(size);
                     if (!*(txt + i))
                         return -1;
                     **(txt + i) = sizeof(struct SignedCert);
-                    memcpy(*(txt + i) + 1, c->signed_certs + i, sizeof(struct SignedCert));
+                    memcpy(*(txt + i) + 1,
+                           c->dnsc.signed_certs + i,
+                           sizeof(struct SignedCert));
                 }
             }
 
-            for (int i=0; i < c->signed_certs_count; i++) {
+            for (int i=0; i < c->dnsc.signed_certs_count; i++) {
                 if (add_resource_record
                     (header, nameoffset, &ansp, 0, NULL, T_TXT, C_IN, "t", size,
                      *(txt + i))) {

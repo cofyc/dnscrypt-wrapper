@@ -181,7 +181,7 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
-    debug_assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
+    debug_assert(sizeof c->dnsc.keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
     if ((keypair =
          find_keypair(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
         tcp_request->is_dnscrypted = false;
