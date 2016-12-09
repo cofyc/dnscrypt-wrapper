@@ -311,11 +311,11 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     assert(sizeof c->dnsc.keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
 
     if ((keypair =
-         find_keypair(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
+         find_keypair(&c->dnsc, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
         udp_request->is_dnscrypted = false;
     } else {
         if (dnscrypt_server_uncurve
-            (c, keypair, udp_request->client_nonce, udp_request->nmkey, dns_query,
+            (&c->dnsc, keypair, udp_request->client_nonce, udp_request->nmkey, dns_query,
              &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             udp_request_kill(udp_request);
@@ -474,7 +474,7 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
 
     if (udp_request->is_dnscrypted) {
         if (dnscrypt_server_curve
-            (c, udp_request->client_nonce, udp_request->nmkey, dns_reply,
+            (&c->dnsc, udp_request->client_nonce, udp_request->nmkey, dns_reply,
              &dns_reply_len, max_len) != 0) {
             logger(LOG_ERR, "Curving reply failed.");
             return;

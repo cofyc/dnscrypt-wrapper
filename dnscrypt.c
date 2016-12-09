@@ -1,17 +1,17 @@
 #include "dnscrypt.h"
 
 const KeyPair *
-find_keypair(const struct context *c,
+find_keypair(const struct dnsc_server_context *c,
              const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
              const size_t dns_query_len)
 {
-    const KeyPair *keypairs = c->dnsc.keypairs;
+    const KeyPair *keypairs = c->keypairs;
     size_t i;
 
     if (dns_query_len <= DNSCRYPT_QUERY_HEADER_SIZE) {
         return NULL;
     }
-    for (i = 0U; i < c->dnsc.keypairs_count; i++) {
+    for (i = 0U; i < c->keypairs_count; i++) {
         if (memcmp(keypairs[i].crypt_publickey, magic_query,
                    DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
             return &keypairs[i];
@@ -192,7 +192,7 @@ dnscrypt_pad(uint8_t *buf, const size_t len, const size_t max_len,
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_PUBLICKEYBYTES + crypto_box_HALF_NONCEBYTES)
 
 int
-dnscrypt_server_uncurve(struct context *c, const KeyPair *keypair,
+dnscrypt_server_uncurve(struct dnsc_server_context *c, const KeyPair *keypair,
                         uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                         uint8_t nmkey[crypto_box_BEFORENMBYTES],
                         uint8_t *const buf, size_t * const lenp)
@@ -238,16 +238,16 @@ dnscrypt_server_uncurve(struct context *c, const KeyPair *keypair,
 }
 
 void
-add_server_nonce(struct context *c, uint8_t *nonce)
+add_server_nonce(struct dnsc_server_context *c, uint8_t *nonce)
 {
     uint64_t ts;
     uint64_t tsn;
     uint32_t suffix;
     ts = dnscrypt_hrtime();
-    if (ts <= c->dnsc.nonce_ts_last) {
-        ts = c->dnsc.nonce_ts_last + 1;
+    if (ts <= c->nonce_ts_last) {
+        ts = c->nonce_ts_last + 1;
     }
-    c->dnsc.nonce_ts_last = ts;
+    c->nonce_ts_last = ts;
     tsn = (ts << 10) | (randombytes_random() & 0x3ff);
 #if (BYTE_ORDER == LITTLE_ENDIAN)
     tsn =
@@ -267,7 +267,7 @@ add_server_nonce(struct context *c, uint8_t *nonce)
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_HALF_NONCEBYTES + crypto_box_HALF_NONCEBYTES)
 
 int
-dnscrypt_server_curve(struct context *c,
+dnscrypt_server_curve(struct dnsc_server_context *c,
                       uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                       uint8_t nmkey[crypto_box_BEFORENMBYTES],
                       uint8_t *const buf, size_t * const lenp,
@@ -286,7 +286,7 @@ dnscrypt_server_curve(struct context *c,
     len =
         dnscrypt_pad(boxed + crypto_box_MACBYTES, len,
                      max_len - DNSCRYPT_REPLY_HEADER_SIZE, nonce,
-                     c->dnsc.keypairs[0].crypt_secretkey);
+                     c->keypairs[0].crypt_secretkey);
     memset(boxed - crypto_box_BOXZEROBYTES, 0, crypto_box_ZEROBYTES);
 
     // add server nonce extension
@@ -381,4 +381,3 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
     }
     return -1;
 }
-
