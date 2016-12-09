@@ -79,8 +79,9 @@ endif
 
 ### Dependencies
 
-LIB_H = dnscrypt.h udp_request.h edns.h logger.h argparse/argparse.h
+LIB_H = dnscrypt-wrapper.h dnscrypt.h udp_request.h edns.h logger.h argparse/argparse.h
 
+LIB_OBJS += dnscrypt-wrapper.o
 LIB_OBJS += dnscrypt.o
 LIB_OBJS += udp_request.o
 LIB_OBJS += tcp_request.o

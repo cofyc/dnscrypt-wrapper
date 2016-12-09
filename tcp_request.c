@@ -1,4 +1,4 @@
-#include "dnscrypt.h"
+#include "dnscrypt-wrapper.h"
 
 static void
 tcp_request_kill(TCPRequest *const tcp_request)

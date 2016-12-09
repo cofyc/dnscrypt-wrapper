@@ -1,5 +1,5 @@
 
-#include "dnscrypt.h"
+#include "dnscrypt-wrapper.h"
 
 typedef struct SendtoWithRetryCtx_ {
     void (*cb) (UDPRequest *udp_request);
