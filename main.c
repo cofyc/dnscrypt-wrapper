@@ -254,7 +254,7 @@ main(int argc, const char **argv)
     int gen_crypt_keypair = 0;
     int gen_cert_file = 0;
     int cert_file_expire_days = CERT_FILE_EXPIRE_DAYS;
-    int provider_publickey_fingerprint = 0;
+    int provider_publickey = 0;
     int provider_publickey_dns_records = 0;
     int verbose = 0;
     struct argparse argparse;
@@ -266,8 +266,8 @@ main(int argc, const char **argv)
                     "generate crypt key pair"),
         OPT_BOOLEAN(0, "gen-provider-keypair", &gen_provider_keypair,
                     "generate provider key pair"),
-        OPT_BOOLEAN(0, "show-provider-publickey-fingerprint", &provider_publickey_fingerprint,
-                    "show provider public key fingerprint"),
+        OPT_BOOLEAN(0, "show-provider-publickey", &provider_publickey,
+                    "show provider public key"),
         OPT_BOOLEAN(0, "show-provider-publickey-dns-records", &provider_publickey_dns_records,
                     "show records for DNS servers"),
         OPT_STRING(0, "provider-cert-file", &c.provider_cert_file,
@@ -335,7 +335,7 @@ main(int argc, const char **argv)
             printf(" ok.\n");
             char fingerprint[80];
             dnscrypt_key_to_fingerprint(fingerprint, provider_publickey);
-            printf("Public key fingerprint: %s\n\n", fingerprint);
+            printf("Provider public key: %s\n\n", fingerprint);
             printf("This is the provider key you should give to users for your service.\n"
                    "(i.e. dnscrypt-proxy --provider-key=%s\n"
                    "                     --resolver-address=<your resolver public IP>\n"
@@ -384,7 +384,7 @@ main(int argc, const char **argv)
         exit(0);
     }
 
-    if (provider_publickey_fingerprint) {
+    if (provider_publickey) {
         char fingerprint[80];
 
         if (read_from_file(c.provider_publickey_file,
@@ -394,8 +394,7 @@ main(int argc, const char **argv)
             exit(1);
         }
         dnscrypt_key_to_fingerprint(fingerprint, c.provider_publickey);
-        printf("Provider public key fingerprint : %s\n",
-               fingerprint);
+        printf("Provider public key: %s\n", fingerprint);
         exit(0);
     }
 
