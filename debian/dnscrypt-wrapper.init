@@ -27,26 +27,35 @@ test -f $DAEMON || exit 0
 
 [ -r /etc/default/dnscrypt-wrapper ] && . /etc/default/dnscrypt-wrapper
 
+DAEMON_OPTS="$RUNTIME_OPTS $NETWORK_OPTS $KEY_OPTS"
+
 case "$1" in
-start)  log_daemon_msg "Starting DNSCrypt wrapper"
-	start_daemon -p $PIDFILE $DAEMON $DAEMON_OPTS
-	log_end_msg $?
-	;;
-stop)   log_daemon_msg "Stopping DNSCrypt wrapper"
-	killproc -p $PIDFILE $DAEMON
-	RETVAL=$?
-	[ $RETVAL -eq 0 ] && [ -e "$PIDFILE" ] && rm -f $PIDFILE
-	log_end_msg $RETVAL
-	;;
-restart) log_daemon_msg "Restarting DNSCrypt wrapper" 
-	$0 stop
-	$0 start
-	;;
-status)
-	status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
-	;;
-*)      log_action_msg "Usage: $SCRIPTNAME {start|stop|status|restart}"
-	exit 2
-	;;
+	start)
+		log_daemon_msg "Starting DNSCrypt wrapper"
+		start_daemon -p $PIDFILE $DAEMON $DAEMON_OPTS
+		log_end_msg $?
+		;;
+
+	stop)
+		log_daemon_msg "Stopping DNSCrypt wrapper"
+		killproc -p $PIDFILE $DAEMON
+		RETVAL=$?
+		[ $RETVAL -eq 0 ] && [ -e "$PIDFILE" ] && rm -f $PIDFILE
+		log_end_msg $RETVAL
+		;;
+
+	restart|force-reload)
+		log_daemon_msg "Restarting DNSCrypt wrapper" 
+		$0 stop
+		$0 start
+		;;
+
+	status)
+		status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+		;;
+
+	*)      log_action_msg "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}"
+		exit 2
+		;;
 esac
 exit 0

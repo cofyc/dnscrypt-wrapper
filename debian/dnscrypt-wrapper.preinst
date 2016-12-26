@@ -10,12 +10,12 @@ case "$1" in
 		;;
 esac
 #
-# Add the "proxy" user/group to /etc/passwd if needed.
+# Add the "dnscrypt-wrapper" user/group to /etc/passwd if needed.
 #
 
-if ! grep -q "^proxy:" /etc/passwd
+if ! grep -q "^dnscrypt-wrapper:" /etc/passwd
 then
-	adduser --system --home /bin --group proxy --shell /usr/sbin/nologin
+	adduser --system --home /bin --group --shell /usr/sbin/nologin dnscrypt-wrapper
 fi
 
 # dh_installdeb will replace this with shell code automatically

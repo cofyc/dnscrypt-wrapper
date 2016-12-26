@@ -1,0 +1,7 @@
+# This file describes option set for DNSProxy-wrapper, brief explanation is below.
+# If you are generating keys by an application itself, please install correct access
+# bits on private keys. 
+
+RUNTIME_OPTS="--user=dnscrypt-wrapper --daemonize --pidfile=/var/run/dnscrypt-wrapper.pid"
+KEY_OPTS="--provider-publickey-file=/etc/dnscrypt-wrapper/public.key --provider-secretkey-file=/etc/dnscrypt-wrapper/private.key --crypt-secretkey-file=/etc/dnscrypt-wrapper/crypt-secret.key --provider-cert-file=/etc/dnscrypt-wrapper/provider.crt --provider-name=2.dnscrypt-cert"
+NETWORK_OPTS="--listen-address=127.0.0.1 --resolver-address=8.8.4.4"

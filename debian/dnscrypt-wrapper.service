@@ -1,0 +1,14 @@
+[Unit]
+Description=DNSCrypt wrapper
+Documentation=man:dnscrypt-wrapper(8)
+After=network.target iptables.service firewalld.service
+
+[Service]
+Type=forking
+EnvironmentFile=-/etc/default/dnscrypt-wrapper
+ExecStart=/usr/sbin/dnscrypt-wrapper $RUNTIME_OPTS $NETWORK_OPTS $KEY_OPTS
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
