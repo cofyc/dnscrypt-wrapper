@@ -1,6 +1,12 @@
 #include "debug.h"
 #include "logger.h"
 
+#ifdef __CYGWIN__
+#ifndef SA_ONSTACK
+#define SA_ONSTACK 0x08000000
+#endif
+#endif
+
 static char *assert_err  = "<no assertion failed>";
 static char *assert_file = "<no file>";
 static int assert_line   = 0;
