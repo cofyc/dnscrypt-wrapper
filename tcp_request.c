@@ -43,6 +43,8 @@ tcp_tune(evutil_socket_t handle)
         return;
     }
 
+    setsockopt(handle, IPPROTO_IP, IP_TOS, (void *) (int []) {
+               0x70}, sizeof(int));
 #ifdef TCP_QUICKACK
     setsockopt(handle, IPPROTO_TCP, TCP_QUICKACK, (void *)(int[]) {
                1}, sizeof(int));
@@ -52,7 +54,7 @@ tcp_tune(evutil_socket_t handle)
 #endif
 #if defined(__linux__) && defined(SO_REUSEPORT)
     setsockopt(handle, SOL_SOCKET, SO_REUSEPORT, (void *)(int[]) {
-        1}, sizeof(int));
+               1}, sizeof(int));
 #endif
 }
 
@@ -182,20 +184,22 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
     debug_assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
+    tcp_request->use_xchacha20 = 0;
     if ((keypair =
-         find_keypair(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
+         find_keypair(c, dnscrypt_header->magic_query, dns_query_len,
+                      &tcp_request->use_xchacha20)) == NULL) {
         tcp_request->is_dnscrypted = false;
     } else {
         if (dnscrypt_server_uncurve
             (c, keypair, tcp_request->client_nonce, tcp_request->nmkey, dns_query,
-             &dns_query_len) != 0) {
+             &dns_query_len, tcp_request->use_xchacha20) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             tcp_request_kill(tcp_request);
             return;
         }
         tcp_request->is_dnscrypted = true;
     }
-    
+
     struct dns_header *header = (struct dns_header *)dns_query;
     // self serve signed certificate for provider name?
     if (!tcp_request->is_dnscrypted) {
@@ -308,7 +312,7 @@ resolver_proxy_read_cb(struct bufferevent *const proxy_resolver_bev,
     if (tcp_request->is_dnscrypted) {
         if (dnscrypt_server_curve
             (c, tcp_request->client_nonce, tcp_request->nmkey, dns_reply,
-             &dns_reply_len, max_len) != 0) {
+             &dns_reply_len, max_len, tcp_request->use_xchacha20) != 0) {
             logger(LOG_ERR, "Curving reply failed.");
             return;
         }

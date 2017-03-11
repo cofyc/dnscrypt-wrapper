@@ -27,6 +27,7 @@ typedef struct UDPRequest_ {
     UDPRequestStatus status;
     unsigned char retries;
     bool is_dnscrypted;
+    bool use_xchacha20;
 } UDPRequest;
 
 typedef TAILQ_HEAD(TCPRequestQueue_, TCPRequest_) TCPRequestQueue;

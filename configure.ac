@@ -80,6 +80,8 @@ if test "$withval" != no; then
     )   
 fi
 
+AC_CHECK_FUNCS(crypto_box_curve25519xchacha20poly1305_open_easy)
+
 # Output files
 AC_CONFIG_FILES(["${config_file}":"${config_in}"])
 AC_OUTPUT
