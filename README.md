@@ -1,12 +1,10 @@
-Name
-====
+# Name
 
 dnscrypt-wrapper - A server-side dnscrypt proxy.
 
 [![Build Status](https://travis-ci.org/cofyc/dnscrypt-wrapper.png?branch=master)](https://travis-ci.org/cofyc/dnscrypt-wrapper)
 
-Description
-===========
+# Description
 
 This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to
 add dnscrypt support to any name resolver.
@@ -14,8 +12,7 @@ add dnscrypt support to any name resolver.
 This software is modified from
 [dnscrypt-proxy](https://github.com/jedisct1/dnscrypt-proxy).
 
-Installation
-============
+# Installation
 
 Install [libsodium](https://github.com/jedisct1/libsodium) and [libevent](http://libevent.org/) 2.1.1+ first.
 
@@ -48,10 +45,9 @@ In Docker:
 
     See https://github.com/jedisct1/dnscrypt-server-docker.
 
-Usage
-=====
+# Usage
 
-1) Generate the provider key pair:
+1 Generate the provider key pair:
 
     $ dnscrypt-wrapper --gen-provider-keypair
 
@@ -68,7 +64,7 @@ If you forgot to save your provider public key:
 
 This will print it out.
 
-2) Generate a time-limited secret key, which will be used to encrypt
+2 Generate a time-limited secret key, which will be used to encrypt
 and authenticate DNS queries. Also generate a certificate for it:
 
     $ dnscrypt-wrapper --gen-crypt-keypair --crypt-secretkey-file=1.key
@@ -82,9 +78,9 @@ and its related certificate as `1.cert` in the current directory.
 Time-limited secret keys and certificates can be updated at any time
 without requiring clients to update their configuration.
 
-3) Run the program with a given key, a provider name and the most recent certificate:
+3 Run the program with a given key, a provider name and the most recent certificate:
 
-    # dnscrypt-wrapper --resolver-address=8.8.8.8:53 --listen-address=0.0.0.0:443 \
+    $ dnscrypt-wrapper --resolver-address=8.8.8.8:53 --listen-address=0.0.0.0:443 \
                        --provider-name=2.dnscrypt-cert.yechengfu.com \
                        --crypt-secretkey-file=1.key --provider-cert-file=1.cert
 
@@ -103,12 +99,12 @@ provider certificate.
 
 You can get instructions later by running:
 
-    # dnscrypt-wrapper --show-provider-publickey-dns-records
+    $ dnscrypt-wrapper --show-provider-publickey-dns-records
                        --provider-cert-file <path/to/your/provider_cert_file>
 
-4) Run dnscrypt-proxy to check if it works:
+4 Run dnscrypt-proxy to check if it works:
 
-    # dnscrypt-proxy --local-address=127.0.0.1:55 --resolver-address=127.0.0.1:443 \
+    $ dnscrypt-proxy --local-address=127.0.0.1:55 --resolver-address=127.0.0.1:443 \
                      --provider-name=2.dnscrypt-cert.yechengfu.com \
                      --provider-key=<provider_public_key>
     $ dig -p 55 google.com @127.0.0.1
@@ -121,8 +117,7 @@ Optionally, add `-d/--daemonize` flag to run as a daemon.
 
 Run `dnscrypt-wrapper -h` to view command line options.
 
-Running unauthenticated DNS and the dnscrypt service on the same port
-=====================================================================
+# Running unauthenticated DNS and the dnscrypt service on the same port
 
 By default, and with the exception of records used for the
 certificates, only queries using the DNSCrypt protocol will be
@@ -141,8 +136,7 @@ port 53 is reachable on your server, you can add the `-U`
 (`--unauthenticated`) switch to the command-line. This is not
 recommended.
 
-Key rotation
-============
+# Key rotation
 
 Time-limited keys are bound to expire.
 
@@ -169,27 +163,27 @@ going to expire.
 
 In order to switch to a fresh new key:
 
-1) Create a new time-limited key (do not change the provider key!) and
+First, Create a new time-limited key (do not change the provider key!) and
 its certificate:
 
     $ dnscrypt-wrapper --gen-crypt-keypair --crypt-secretkey-file=2.key
     $ dnscrypt-wrapper --gen-cert-file --crypt-secretkey-file=2.key --provider-cert-file=2.cert
 
-2) Tell new users to use the new certificate but still accept the old
+Second, Tell new users to use the new certificate but still accept the old
 key until all clients have loaded the new certificate:
 
-    # dnscrypt-wrapper --resolver-address=8.8.8.8:53 --listen-address=0.0.0.0:443 \
+    $ dnscrypt-wrapper --resolver-address=8.8.8.8:53 --listen-address=0.0.0.0:443 \
                        --provider-name=2.dnscrypt-cert.yechengfu.com \
                        --crypt-secretkey-file=1.key,2.key --provider-cert-file=2.cert
 
 Note that both `1.key` and `2.key` have be specified, in order to
 accept both the previous and the current key.
 
-3) Clients automatically check for new certificates every hour. So,
+3 Clients automatically check for new certificates every hour. So,
 after one hour, the old certificate can be refused, by leaving only
 the new one in the configuration:
 
-    # dnscrypt-wrapper --resolver-address=8.8.8.8:53 --listen-address=0.0.0.0:443 \
+    $ dnscrypt-wrapper --resolver-address=8.8.8.8:53 --listen-address=0.0.0.0:443 \
                        --provider-name=2.dnscrypt-cert.yechengfu.com \
                        --crypt-secretkey-file=2.key --provider-cert-file=2.cert
 
@@ -201,16 +195,15 @@ after the new one started.
 
 This also allows upgrades with zero downtime.
 
-中文文档
-========
+# 中文文档
 
-注：第三方文档可能未及时与最新版本同步，以 README.md 为准。
 
 - CentOS/Debian/Ubuntu 下编译 dnscrypt-wrapper: http://03k.org/centos-make-dnscrypt-wrapper.html
 - dnscrypt-wrapper 使用方法: http://03k.org/dnscrypt-wrapper-usage.html
 
-See also
-========
+注：第三方文档可能未及时与最新版本同步，以 README.md 为准。
+
+# See also
 
 - http://dnscrypt.org/
 - https://github.com/jedisct1/dnscrypt-proxy
