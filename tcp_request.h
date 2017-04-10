@@ -31,6 +31,7 @@ typedef struct TCPRequest_ {
     size_t dns_reply_len;
     TCPRequestStatus status;
     bool is_dnscrypted;
+    bool use_xchacha20;
 } TCPRequest;
 
 int tcp_listener_bind(struct context *c);

@@ -1,7 +1,8 @@
 #include "dnscrypt.h"
 
 struct SignedCert *
-cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days)
+cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days,
+                int use_xchacha20)
 {
     struct SignedCert *signed_cert = malloc(sizeof(struct SignedCert));
     if (!signed_cert)
@@ -9,7 +10,11 @@ cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days)
 
     memcpy(signed_cert->magic_cert, CERT_MAGIC_CERT, 4);
     signed_cert->version_major[0] = 0;
-    signed_cert->version_major[1] = 1;
+    if (use_xchacha20) {
+        signed_cert->version_major[1] = 2;
+    } else {
+        signed_cert->version_major[1] = 1;
+    }
     signed_cert->version_minor[0] = 0;
     signed_cert->version_minor[1] = 0;
 
@@ -17,6 +22,9 @@ cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days)
            crypto_box_PUBLICKEYBYTES);
     memcpy(signed_cert->magic_query, crypt_publickey,
            sizeof(signed_cert->magic_query));
+    if (use_xchacha20) {
+        sodium_increment(signed_cert->magic_query, sizeof signed_cert->magic_query);
+    }
     uint32_t ts_begin = (uint32_t)time(NULL);
     uint32_t ts_end = ts_begin + cert_file_expire_days * 24 * 3600;
     if (cert_file_expire_days <= 0) {
