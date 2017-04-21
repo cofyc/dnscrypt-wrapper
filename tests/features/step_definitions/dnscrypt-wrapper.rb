@@ -26,7 +26,15 @@ Given /^a running dnscrypt wrapper with options "([^"]*)"$/ do |options|
     "--provider-name=2.dnscrypt-cert.example.com " +
     "--listen-address=#{WRAPPER_IP}:#{WRAPPER_PORT} #{options}"
   @pipe = IO.popen(str.split, "r")
-  sleep(0.5)
+  begin
+    Timeout.timeout(0.5) do
+      Process.wait @pipe.pid
+      @error = @pipe.read
+      @pipe = nil
+    end
+  rescue Timeout::Error
+    # The process is still running, so it did not fail yet/
+  end
 end
 
 And /^a tcp resolver$/ do
@@ -39,12 +47,17 @@ When /^a client asks dnscrypt\-wrapper for "([^"]*)" "([^"]*)" record$/ do |name
       @answer_section = @resolver.query(name, Net::DNS.const_get(qtype.upcase)).answer
     end
   rescue Timeout::Error => @error
+  rescue Errno::ECONNREFUSED => @error
   end
 end
 
 Then /^dnscrypt\-wrapper returns "([^"]*)"$/ do |certfile|
   cert = open(certfile).read()
   expect(@answer_section.collect { |a| a.txt.strip().force_encoding('UTF-8') }).to include(cert)
+end
+
+Then /^dnscrypt-wrapper fails with "(.*)"$/ do |error|
+  expect(@error).to include(error)
 end
 
 Then /^dnscrypt\-wrapper does not returns "([^"]*)"$/ do |certfile|

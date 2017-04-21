@@ -62,6 +62,8 @@ udp_tune(evutil_socket_t const handle)
     if (handle == -1) {
         return;
     }
+    setsockopt(handle, IPPROTO_IP, IP_TOS, (void *) (int []) {
+                       0x70}, sizeof(int));
     setsockopt(handle, SOL_SOCKET, SO_RCVBUFFORCE, (void *)(int[]) {
                UDP_BUFFER_SIZE}, sizeof(int));
     setsockopt(handle, SOL_SOCKET, SO_SNDBUFFORCE, (void *)(int[]) {
@@ -78,7 +80,7 @@ udp_tune(evutil_socket_t const handle)
 #endif
 #if defined(__linux__) && defined(SO_REUSEPORT)
     setsockopt(handle, SOL_SOCKET, SO_REUSEPORT, (void *)(int[]) {
-        1}, sizeof(int));
+               1}, sizeof(int));
 #endif
 }
 
@@ -308,15 +310,16 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     // decrypt if encrypted
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
-    assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
-
+    debug_assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
+    udp_request->use_xchacha20 = 0;
     if ((keypair =
-         find_keypair(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
+         find_keypair(c, dnscrypt_header->magic_query, dns_query_len,
+                      &udp_request->use_xchacha20)) == NULL) {
         udp_request->is_dnscrypted = false;
     } else {
         if (dnscrypt_server_uncurve
             (c, keypair, udp_request->client_nonce, udp_request->nmkey, dns_query,
-             &dns_query_len) != 0) {
+             &dns_query_len, udp_request->use_xchacha20) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             udp_request_kill(udp_request);
             return;
@@ -475,7 +478,7 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
     if (udp_request->is_dnscrypted) {
         if (dnscrypt_server_curve
             (c, udp_request->client_nonce, udp_request->nmkey, dns_reply,
-             &dns_reply_len, max_len) != 0) {
+             &dns_reply_len, max_len, udp_request->use_xchacha20) != 0) {
             logger(LOG_ERR, "Curving reply failed.");
             return;
         }

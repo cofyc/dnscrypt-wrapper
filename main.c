@@ -244,6 +244,54 @@ parse_cert_files(struct context *c)
     return 0;
 }
 
+static int
+match_cert_to_keys(struct context *c) {
+    size_t keypair_id, signed_cert_id, cert_id;
+
+    c->certs = sodium_allocarray(c->signed_certs_count, sizeof *c->certs);
+    cert_id = 0U;
+
+    for(keypair_id=0; keypair_id < c->keypairs_count; keypair_id++) {
+        KeyPair *kp = c->keypairs + keypair_id;
+        int found_cert = 0;
+        for(signed_cert_id=0; signed_cert_id < c->signed_certs_count && !found_cert; signed_cert_id++) {
+            struct SignedCert *signed_cert = c->signed_certs + signed_cert_id;
+            struct Cert *cert = (struct Cert *)signed_cert;
+            if(memcmp(kp->crypt_publickey,
+                      cert->server_publickey,
+                      crypto_box_PUBLICKEYBYTES) == 0) {
+                dnsccert *current_cert = c->certs + cert_id++;
+                found_cert = 1;
+                current_cert->keypair = kp;
+                memcpy(current_cert->magic_query,
+                       cert->magic_query,
+                       sizeof cert->magic_query
+                );
+                memcpy(current_cert->es_version,
+                       cert->version_major,
+                        sizeof cert->version_major
+                );
+#ifndef HAVE_XCHACHA20
+                if (current_cert->es_version[1] == 0x02) {
+                    logger(LOG_ERR,
+                           "Certificate for XChacha20 but your "
+                           "libsodium version does not support it.");
+                    return 1;
+                }
+#endif
+            }
+        }
+        if (!found_cert) {
+            logger(LOG_ERR,
+                   "could not match secret key %d with a certificate.",
+                   keypair_id + 1);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
 int
 main(int argc, const char **argv)
 {
@@ -257,6 +305,7 @@ main(int argc, const char **argv)
     int provider_publickey = 0;
     int provider_publickey_dns_records = 0;
     int verbose = 0;
+    int use_xchacha20 = 0;
     struct argparse argparse;
     struct argparse_option options[] = {
         OPT_HELP(),
@@ -297,6 +346,9 @@ main(int argc, const char **argv)
         OPT_BOOLEAN('V', "verbose", &verbose,
                     "show verbose logs (specify more -VVV to increase verbosity)"),
         OPT_BOOLEAN('v', "version", NULL, "show version info", show_version_cb),
+#ifdef HAVE_CRYPTO_BOX_CURVE25519XCHACHA20POLY1305_OPEN_EASY
+        OPT_BOOLEAN('x', "xchacha20", &use_xchacha20, "generate a certificate for use with the xchacha20 cipher"),
+#endif
         OPT_END(),
     };
 
@@ -491,7 +543,7 @@ main(int argc, const char **argv)
         }
         logger(LOG_NOTICE, "Generating pre-signed certificate.");
         struct SignedCert *signed_cert =
-            cert_build_cert(c.keypairs->crypt_publickey, cert_file_expire_days);
+            cert_build_cert(c.keypairs->crypt_publickey, cert_file_expire_days, use_xchacha20);
         if (!signed_cert || cert_sign(signed_cert, c.provider_secretkey) != 0) {
             logger(LOG_NOTICE, "Failed.");
             exit(1);
@@ -543,7 +595,9 @@ main(int argc, const char **argv)
     if (parse_cert_files(&c)) {
         exit(1);
     }
-
+    if(match_cert_to_keys(&c)) {
+        exit(1);
+    }
     if (c.signed_certs_count <= 0U) {
         logger(LOG_ERR, "You must specify --provider-cert-file.\n\n");
         argparse_usage(&argparse);
