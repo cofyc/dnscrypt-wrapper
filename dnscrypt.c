@@ -1,34 +1,23 @@
 #include "dnscrypt.h"
 
-const KeyPair *
-find_keypair(const struct context *c,
+const dnsccert *
+find_cert(const struct context *c,
              const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
-             const size_t dns_query_len,
-             bool *use_xchacha20)
+             const size_t dns_query_len)
 {
-    unsigned char magic_query_ref[DNSCRYPT_MAGIC_HEADER_LEN];
-    const KeyPair *keypairs = c->keypairs;
+    const dnsccert *certs = c->certs;
     size_t i;
 
     if (dns_query_len <= DNSCRYPT_QUERY_HEADER_SIZE) {
         return NULL;
     }
-    *use_xchacha20 = 0;
-    for (i = 0U; i < c->keypairs_count; i++) {
-        memcpy(magic_query_ref, keypairs[i].crypt_publickey, sizeof magic_query_ref);
-        if (memcmp(magic_query_ref, magic_query, DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
-            return &keypairs[i];
+    for (i = 0U; i < c->signed_certs_count; i++) {
+        if (memcmp(certs[i].magic_query, magic_query, DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
+            return &certs[i];
         }
-#ifdef HAVE_CRYPTO_BOX_CURVE25519XCHACHA20POLY1305_OPEN_EASY
-        sodium_increment(magic_query_ref, sizeof magic_query_ref);
-        if (memcmp(magic_query_ref, magic_query, DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
-            *use_xchacha20 = 1;
-            return &keypairs[i];
-        }
-#endif
     }
     if (memcmp(magic_query, CERT_OLD_MAGIC_HEADER, DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
-        return &keypairs[0];
+        return &certs[0];
     }
     return NULL;
 }
@@ -202,11 +191,10 @@ dnscrypt_pad(uint8_t *buf, const size_t len, const size_t max_len,
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_PUBLICKEYBYTES + crypto_box_HALF_NONCEBYTES)
 
 int
-dnscrypt_server_uncurve(struct context *c, const KeyPair *keypair,
+dnscrypt_server_uncurve(struct context *c, const dnsccert *cert,
                         uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                         uint8_t nmkey[crypto_box_BEFORENMBYTES],
-                        uint8_t *const buf, size_t * const lenp,
-                        const bool use_xchacha20)
+                        uint8_t *const buf, size_t * const lenp)
 {
     size_t len = *lenp;
 
@@ -217,14 +205,16 @@ dnscrypt_server_uncurve(struct context *c, const KeyPair *keypair,
     struct dnscrypt_query_header *query_header =
         (struct dnscrypt_query_header *)buf;
     memcpy(nmkey, query_header->publickey, crypto_box_PUBLICKEYBYTES);
-    if (use_xchacha20) {
+    if (XCHACHA20_CERT(cert)) {
 #ifdef HAVE_CRYPTO_BOX_CURVE25519XCHACHA20POLY1305_OPEN_EASY
-        if (crypto_box_curve25519xchacha20poly1305_beforenm(nmkey, nmkey, keypair->crypt_secretkey) != 0) {
+        if (crypto_box_curve25519xchacha20poly1305_beforenm(nmkey, nmkey,
+                cert->keypair->crypt_secretkey) != 0) {
             return -1;
         }
 #endif
     } else {
-        if (crypto_box_beforenm(nmkey, nmkey, keypair->crypt_secretkey) != 0) {
+        if (crypto_box_beforenm(nmkey, nmkey,
+                                cert->keypair->crypt_secretkey) != 0) {
             return -1;
         }
     }
@@ -233,7 +223,7 @@ dnscrypt_server_uncurve(struct context *c, const KeyPair *keypair,
     memcpy(nonce, query_header->nonce, crypto_box_HALF_NONCEBYTES);
     memset(nonce + crypto_box_HALF_NONCEBYTES, 0, crypto_box_HALF_NONCEBYTES);
 
-    if (use_xchacha20) {
+    if (XCHACHA20_CERT(cert)) {
 #ifdef HAVE_CRYPTO_BOX_CURVE25519XCHACHA20POLY1305_OPEN_EASY
         if (crypto_box_curve25519xchacha20poly1305_open_easy_afternm
             (buf, buf + DNSCRYPT_QUERY_BOX_OFFSET,
@@ -291,11 +281,11 @@ add_server_nonce(struct context *c, uint8_t *nonce)
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_HALF_NONCEBYTES + crypto_box_HALF_NONCEBYTES)
 
 int
-dnscrypt_server_curve(struct context *c,
+dnscrypt_server_curve(struct context *c, const dnsccert *cert,
                       uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                       uint8_t nmkey[crypto_box_BEFORENMBYTES],
                       uint8_t *const buf, size_t * const lenp,
-                      const size_t max_len, const bool use_xchacha20)
+                      const size_t max_len)
 {
     uint8_t nonce[crypto_box_NONCEBYTES];
     uint8_t *boxed;
@@ -314,7 +304,7 @@ dnscrypt_server_curve(struct context *c,
     // add server nonce extension
     add_server_nonce(c, nonce);
 
-    if (use_xchacha20) {
+    if (XCHACHA20_CERT(cert)) {
 #ifdef HAVE_CRYPTO_BOX_CURVE25519XCHACHA20POLY1305_OPEN_EASY
         if (crypto_box_curve25519xchacha20poly1305_easy_afternm
             (boxed, boxed + crypto_box_MACBYTES, len, nonce, nmkey) != 0) {

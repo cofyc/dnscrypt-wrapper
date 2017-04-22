@@ -116,7 +116,6 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     uint8_t dns_query_len_buf[2];
     uint8_t dns_curved_query_len_buf[2];
     TCPRequest *tcp_request = tcp_request_;
-    const KeyPair *keypair;
     struct context *c = tcp_request->context;
     struct evbuffer *input = bufferevent_get_input(client_proxy_bev);
     size_t available_size;
@@ -184,15 +183,14 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
     debug_assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
-    tcp_request->use_xchacha20 = 0;
-    if ((keypair =
-         find_keypair(c, dnscrypt_header->magic_query, dns_query_len,
-                      &tcp_request->use_xchacha20)) == NULL) {
+    if ((tcp_request->cert =
+         find_cert(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
         tcp_request->is_dnscrypted = false;
     } else {
-        if (dnscrypt_server_uncurve
-            (c, keypair, tcp_request->client_nonce, tcp_request->nmkey, dns_query,
-             &dns_query_len, tcp_request->use_xchacha20) != 0) {
+        if (dnscrypt_server_uncurve(c, tcp_request->cert,
+                                    tcp_request->client_nonce,
+                                    tcp_request->nmkey, dns_query,
+                                    &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             tcp_request_kill(tcp_request);
             return;
@@ -310,9 +308,9 @@ resolver_proxy_read_cb(struct bufferevent *const proxy_resolver_bev,
         dns_reply_len + DNSCRYPT_MAX_PADDING + DNSCRYPT_REPLY_HEADER_SIZE;
 
     if (tcp_request->is_dnscrypted) {
-        if (dnscrypt_server_curve
-            (c, tcp_request->client_nonce, tcp_request->nmkey, dns_reply,
-             &dns_reply_len, max_len, tcp_request->use_xchacha20) != 0) {
+        if (dnscrypt_server_curve(c, tcp_request->cert,
+                                  tcp_request->client_nonce, tcp_request->nmkey,
+                                  dns_reply, &dns_reply_len, max_len) != 0) {
             logger(LOG_ERR, "Curving reply failed.");
             return;
         }

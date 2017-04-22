@@ -93,6 +93,11 @@
 #define DNSCRYPT_REPLY_HEADER_SIZE \
     (DNSCRYPT_MAGIC_HEADER_LEN + crypto_box_HALF_NONCEBYTES * 2 + crypto_box_MACBYTES)
 
+#define XSALSA20_CERT(cert) (cert->es_version[0] == 0 && \
+    cert->es_version[1] == 1)
+#define XCHACHA20_CERT(cert) (cert->es_version[0] == 0 && \
+    cert->es_version[1] == 2)
+
 typedef struct KeyPair_ {
     uint8_t crypt_publickey[crypto_box_PUBLICKEYBYTES];
     uint8_t crypt_secretkey[crypto_box_SECRETKEYBYTES];
@@ -154,9 +159,9 @@ struct context {
     unsigned char hash_key[crypto_shorthash_KEYBYTES];
 };
 
-const KeyPair * find_keypair(const struct context *c,
-                             const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
-                             const size_t dns_query_len, bool *use_xchacha20);
+const dnsccert * find_cert(const struct context *c,
+                           const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
+                           const size_t dns_query_len);
 int dnscrypt_cmp_client_nonce(const uint8_t
                               client_nonce[crypto_box_HALF_NONCEBYTES],
                               const uint8_t *const buf, const size_t len);
@@ -213,16 +218,15 @@ struct dnscrypt_query_header {
     uint8_t mac[crypto_box_MACBYTES];
 };
 
-int dnscrypt_server_uncurve(struct context *c, const KeyPair *keypair,
+int dnscrypt_server_uncurve(struct context *c, const dnsccert *cert,
                             uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                             uint8_t nmkey[crypto_box_BEFORENMBYTES],
-                            uint8_t *const buf, size_t * const lenp,
-                            const bool use_xchacha20);
-int dnscrypt_server_curve(struct context *c,
+                            uint8_t *const buf, size_t * const lenp);
+int dnscrypt_server_curve(struct context *c, const dnsccert *cert,
                           uint8_t client_nonce[crypto_box_HALF_NONCEBYTES],
                           uint8_t nmkey[crypto_box_BEFORENMBYTES],
                           uint8_t *const buf, size_t * const lenp,
-                          const size_t max_len, const bool use_xchacha20);
+                          const size_t max_len);
 /**
  * Given a DNS request,iterate over the question sections.
  * If a TXT request for provider name is made, adds the certs as TXT records

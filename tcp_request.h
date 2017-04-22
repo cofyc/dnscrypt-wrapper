@@ -10,6 +10,7 @@
 #endif
 
 struct context;
+struct cert_;
 
 typedef struct TCPRequestStatus_ {
     bool has_dns_query_len:1;
@@ -30,8 +31,8 @@ typedef struct TCPRequest_ {
     size_t dns_query_len;
     size_t dns_reply_len;
     TCPRequestStatus status;
+    const struct cert_ *cert;
     bool is_dnscrypted;
-    bool use_xchacha20;
 } TCPRequest;
 
 int tcp_listener_bind(struct context *c);
