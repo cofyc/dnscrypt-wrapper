@@ -4,6 +4,7 @@
 #include "dnscrypt.h"
 
 struct context;
+struct cert_;
 
 typedef struct UDPRequestStatus_ {
     bool is_dying:1;
@@ -26,8 +27,8 @@ typedef struct UDPRequest_ {
     ev_socklen_t client_sockaddr_len;
     UDPRequestStatus status;
     unsigned char retries;
+    const struct cert_ *cert;
     bool is_dnscrypted;
-    bool use_xchacha20;
 } UDPRequest;
 
 typedef TAILQ_HEAD(TCPRequestQueue_, TCPRequest_) TCPRequestQueue;

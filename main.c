@@ -254,7 +254,7 @@ match_cert_to_keys(struct context *c) {
     for(keypair_id=0; keypair_id < c->keypairs_count; keypair_id++) {
         KeyPair *kp = c->keypairs + keypair_id;
         int found_cert = 0;
-        for(signed_cert_id=0; signed_cert_id < c->signed_certs_count && !found_cert; signed_cert_id++) {
+        for(signed_cert_id=0; signed_cert_id < c->signed_certs_count; signed_cert_id++) {
             struct SignedCert *signed_cert = c->signed_certs + signed_cert_id;
             struct Cert *cert = (struct Cert *)signed_cert;
             if(memcmp(kp->crypt_publickey,
@@ -271,7 +271,7 @@ match_cert_to_keys(struct context *c) {
                        cert->version_major,
                         sizeof cert->version_major
                 );
-#ifndef HAVE_XCHACHA20
+#ifndef HAVE_CRYPTO_BOX_CURVE25519XCHACHA20POLY1305_OPEN_EASY
                 if (current_cert->es_version[1] == 0x02) {
                     logger(LOG_ERR,
                            "Certificate for XChacha20 but your "
@@ -595,7 +595,7 @@ main(int argc, const char **argv)
     if (parse_cert_files(&c)) {
         exit(1);
     }
-    if(match_cert_to_keys(&c)) {
+    if (match_cert_to_keys(&c)) {
         exit(1);
     }
     if (c.signed_certs_count <= 0U) {

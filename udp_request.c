@@ -261,7 +261,6 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     uint8_t dns_query[DNS_MAX_PACKET_SIZE_UDP];
     struct context *c = context;
     UDPRequest *udp_request;
-    const KeyPair *keypair;
     ssize_t nread;
     size_t dns_query_len = 0;
 
@@ -311,15 +310,14 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     struct dnscrypt_query_header *dnscrypt_header =
         (struct dnscrypt_query_header *)dns_query;
     debug_assert(sizeof c->keypairs[0].crypt_publickey >= DNSCRYPT_MAGIC_HEADER_LEN);
-    udp_request->use_xchacha20 = 0;
-    if ((keypair =
-         find_keypair(c, dnscrypt_header->magic_query, dns_query_len,
-                      &udp_request->use_xchacha20)) == NULL) {
+    if ((udp_request->cert =
+         find_cert(c, dnscrypt_header->magic_query, dns_query_len)) == NULL) {
         udp_request->is_dnscrypted = false;
     } else {
-        if (dnscrypt_server_uncurve
-            (c, keypair, udp_request->client_nonce, udp_request->nmkey, dns_query,
-             &dns_query_len, udp_request->use_xchacha20) != 0) {
+        if (dnscrypt_server_uncurve(c, udp_request->cert,
+                                    udp_request->client_nonce,
+                                    udp_request->nmkey, dns_query,
+                                    &dns_query_len) != 0) {
             logger(LOG_WARNING, "Received a suspicious query from the client");
             udp_request_kill(udp_request);
             return;
@@ -477,8 +475,8 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
 
     if (udp_request->is_dnscrypted) {
         if (dnscrypt_server_curve
-            (c, udp_request->client_nonce, udp_request->nmkey, dns_reply,
-             &dns_reply_len, max_len, udp_request->use_xchacha20) != 0) {
+            (c, udp_request->cert, udp_request->client_nonce, udp_request->nmkey, dns_reply,
+             &dns_reply_len, max_len) != 0) {
             logger(LOG_ERR, "Curving reply failed.");
             return;
         }
