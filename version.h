@@ -2,6 +2,6 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-const char *the_version = "0.2.2-46.g9c142db";
+const char *the_version = "0.3";
 
 #endif
