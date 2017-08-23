@@ -14,6 +14,7 @@
 /tests/tmp/
 /config.log
 /configure
+/configure.lineno
 /autom4te.cache/
 /config.mak.autogen
 /config.mak

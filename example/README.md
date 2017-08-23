@@ -1,6 +1,6 @@
 # Example
 
-A demo example.
+This is a demo. DO NOT USE ANY certificate/secret files in this directory.
 
 ## Usage
 
