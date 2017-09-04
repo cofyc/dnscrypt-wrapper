@@ -76,7 +76,7 @@ stored and backuped.
 If you forgot to save your provider public key:
 
 ```
-$ dnscrypt-wrapper --show-provider-publickey --provider-publickey-file <your-publickey-file>
+$ dnscrypt-wrapper --show-provider-publickey-fingerprint --provider-publickey-file <your-publickey-file>
 ```
 
 This will print it out.
