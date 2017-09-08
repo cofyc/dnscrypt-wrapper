@@ -8,7 +8,7 @@ Homepage: https://dnscrypt.org
 
 Package: dnscrypt-wrapper
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, adduser, libsodium13, libevent-2.0-5
+Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
 Description: custom secured DNS query wrapper
  DNSCrypt is a protocol that authenticates communications between a DNS client 
  and a DNS resolver. It prevents DNS spoofing. It uses cryptographic signatures 
