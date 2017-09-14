@@ -10,7 +10,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         dh-systemd \
         dh-autoreconf \
         fakeroot \
-        devscripts 
+        devscripts
 
 ADD hack/entrypoint.sh /entrypoint.sh
 
