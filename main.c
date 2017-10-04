@@ -328,7 +328,7 @@ main(int argc, const char **argv)
                    "provider secret key file (default: ./secret.key)"),
         OPT_STRING(0, "crypt-secretkey-file", &c.crypt_secretkey_file,
                    "crypt secret key file (default: ./crypt_secret.key)"),
-        OPT_INTEGER(0, "cert-file-expire-days", &cert_file_expire_days, "cert file expire days (default: 365)"),
+        OPT_INTEGER(0, "cert-file-expire-days", &cert_file_expire_days, "cert file expire days (default: 1)"),
         OPT_STRING('a', "listen-address", &c.listen_address,
                    "local address to listen (default: 0.0.0.0:53)"),
         OPT_STRING('r', "resolver-address", &c.resolver_address,

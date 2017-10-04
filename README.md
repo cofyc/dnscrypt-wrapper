@@ -87,8 +87,7 @@ and authenticate DNS queries. Also generate a certificate for it:
 ```
 $ dnscrypt-wrapper --gen-crypt-keypair --crypt-secretkey-file=1.key
 $ dnscrypt-wrapper --gen-cert-file --crypt-secretkey-file=1.key --provider-cert-file=1.cert \
-                   --provider-publickey-file=public.key --provider-secretkey-file=secret.key \
-                   --cert-file-expire-days=365
+                   --provider-publickey-file=public.key --provider-secretkey-file=secret.key
 ```
 
 In this example, the time-limited secret key will be saved as `1.key`
@@ -97,7 +96,9 @@ and its related certificate as `1.cert` in the current directory.
 Time-limited secret keys and certificates can be updated at any time
 without requiring clients to update their configuration.
 
-NOTE: In production, it's better to use short-term secret key (e.g. 1 day) and use
+NOTE: By default, secret key expires in 1 day (24 hours) for safety. You can
+change it by adding `--cert-file-expire-days=<your-expected-expiraiton-days>`,
+but it's better to use short-term secret key and use
 [key-rotation](#key-rotation) mechanism.
 
 3) Run the program with a given key, a provider name and the most recent certificate:
