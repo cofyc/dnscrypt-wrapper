@@ -209,7 +209,7 @@ key until all clients have loaded the new certificate:
 ```
 $ dnscrypt-wrapper --resolver-address=8.8.8.8:53 --listen-address=0.0.0.0:443 \
                    --provider-name=2.dnscrypt-cert.<yourdomain> \
-                   --crypt-secretkey-file=1.key,2.key --provider-cert-file=2.cert
+                   --crypt-secretkey-file=1.key,2.key --provider-cert-file=1.cert,2.cert
 ```
 
 Note that both `1.key` and `2.key` have be specified, in order to
