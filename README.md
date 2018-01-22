@@ -62,9 +62,13 @@ In Docker:
 
 1) Generate the provider key pair:
 
+```sh
+$ dnscrypt-wrapper --gen-provider-keypair \
+  --provider-name=2.dnscrypt-cert.<yourdomain> --ext-address=<external server ip>
 ```
-$ dnscrypt-wrapper --gen-provider-keypair
-```
+
+If your server doesn't store logs, add `--nolog` and if it supports DNSSEC,
+add `--dnssec`.
 
 This will create two files in the current directory: `public.key` and
 `secret.key`.
@@ -73,9 +77,11 @@ This is a long-term key pair that is never supposed to change unless the
 secret key is compromised. Make sure that `secret.key` is securely
 stored and backuped.
 
+It will also print the stamp for dnscrypt-proxy version 2.x.
+
 If you forgot to save your provider public key:
 
-```
+```sh
 $ dnscrypt-wrapper --show-provider-publickey --provider-publickey-file <your-publickey-file>
 ```
 
@@ -84,7 +90,7 @@ This will print it out.
 2) Generate a time-limited secret key, which will be used to encrypt
 and authenticate DNS queries. Also generate a certificate for it:
 
-```
+```sh
 $ dnscrypt-wrapper --gen-crypt-keypair --crypt-secretkey-file=1.key
 $ dnscrypt-wrapper --gen-cert-file --crypt-secretkey-file=1.key --provider-cert-file=1.cert \
                    --provider-publickey-file=public.key --provider-secretkey-file=secret.key
@@ -103,7 +109,7 @@ but it's better to use short-term secret key and use
 
 3) Run the program with a given key, a provider name and the most recent certificate:
 
-```
+```sh
 $ dnscrypt-wrapper --resolver-address=8.8.8.8:53 --listen-address=0.0.0.0:443 \
                    --provider-name=2.dnscrypt-cert.<yourdomain> \
                    --crypt-secretkey-file=1.key --provider-cert-file=1.cert
@@ -125,14 +131,14 @@ provider certificate.
 
 You can get instructions later by running:
 
-```
+```sh
 $ dnscrypt-wrapper --show-provider-publickey-dns-records
                    --provider-cert-file <path/to/your/provider_cert_file>
 ```
 
 4) Run dnscrypt-proxy to check if it works:
 
-```
+```sh
 $ dnscrypt-proxy --local-address=127.0.0.1:55 --resolver-address=127.0.0.1:443 \
                  --provider-name=2.dnscrypt-cert.<yourdomain> \
                  --provider-key=<provider_public_key>
@@ -171,7 +177,7 @@ Time-limited keys are bound to expire.
 `dnscrypt-proxy` can check if the current key for a given server is
 not going to expire soon:
 
-```
+```sh
 $ dnscrypt-proxy --resolver-address=127.0.0.1:443 \
                  --provider-name=2.dnscrypt-cert.<yourdomain> \
                  --provider-key=<provider_public_key> \
@@ -196,7 +202,7 @@ In order to switch to a fresh new key:
 First, create a new time-limited key (do not change the provider key!) and
 its certificate:
 
-```
+```sh
 $ dnscrypt-wrapper --gen-crypt-keypair --crypt-secretkey-file=2.key
 $ dnscrypt-wrapper --gen-cert-file --crypt-secretkey-file=2.key --provider-cert-file=2.cert \
                    --provider-publickey-file=public.key --provider-secretkey-file=secret.key \
@@ -206,7 +212,7 @@ $ dnscrypt-wrapper --gen-cert-file --crypt-secretkey-file=2.key --provider-cert-
 Second, Tell new users to use the new certificate but still accept the old
 key until all clients have loaded the new certificate:
 
-```
+```sh
 $ dnscrypt-wrapper --resolver-address=8.8.8.8:53 --listen-address=0.0.0.0:443 \
                    --provider-name=2.dnscrypt-cert.<yourdomain> \
                    --crypt-secretkey-file=1.key,2.key --provider-cert-file=1.cert,2.cert
@@ -219,7 +225,7 @@ Third, Clients automatically check for new certificates every hour. So,
 after one hour, the old certificate can be refused, by leaving only
 the new one in the configuration:
 
-```
+```sh
 $ dnscrypt-wrapper --resolver-address=8.8.8.8:53 --listen-address=0.0.0.0:443 \
                    --provider-name=2.dnscrypt-cert.<yourdomain> \
                    --crypt-secretkey-file=2.key --provider-cert-file=2.cert
