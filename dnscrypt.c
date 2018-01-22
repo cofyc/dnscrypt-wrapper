@@ -1,5 +1,51 @@
 #include "dnscrypt.h"
 
+typedef struct Cached_ {
+    uint8_t pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t shared[crypto_box_BEFORENMBYTES];
+} Cached;
+
+static Cached cache[4096];
+
+static inline size_t
+h12(const uint8_t pk[crypto_box_PUBLICKEYBYTES], bool use_xchacha20)
+{
+    uint64_t a, b, c, d;
+    uint32_t h;
+
+    memcpy(&a, &pk[0], 8);  memcpy(&b, &pk[8], 8);
+    memcpy(&c, &pk[16], 8); memcpy(&d, &pk[24], 8);
+    a ^= b ^ c ^ d;
+    h = ((uint32_t) a) ^ ((uint32_t) (a >> 32));
+    return (size_t) (((h >> 20) ^ (h >> 8) ^ (h << 4) ^ use_xchacha20) & 0xfff);
+}
+
+static int
+cache_get(Cached ** const cached_p,
+          const uint8_t pk[crypto_box_PUBLICKEYBYTES], const bool use_xchacha20)
+{
+    Cached *cached = &cache[h12(pk, use_xchacha20)];
+
+    *cached_p = cached;
+    if (memcmp(cached->pk, pk, crypto_box_PUBLICKEYBYTES - 1) == 0 &&
+        (cached->pk[crypto_box_PUBLICKEYBYTES - 1] ^ use_xchacha20) == pk[crypto_box_PUBLICKEYBYTES - 1]) {
+        return 1;
+    }
+    return 0;
+}
+
+static void
+cache_set(const uint8_t shared[crypto_box_BEFORENMBYTES],
+          const uint8_t pk[crypto_box_PUBLICKEYBYTES], const bool use_xchacha20)
+{
+    Cached *cached;
+
+    cache_get(&cached, pk, use_xchacha20);
+    memcpy(cached->pk, pk, crypto_box_PUBLICKEYBYTES);
+    cached->pk[crypto_box_PUBLICKEYBYTES - 1] ^= use_xchacha20;
+    memcpy(cached->shared, shared, crypto_box_BEFORENMBYTES);
+}
+
 const dnsccert *
 find_cert(const struct context *c,
              const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
@@ -204,19 +250,26 @@ dnscrypt_server_uncurve(struct context *c, const dnsccert *cert,
 
     struct dnscrypt_query_header *query_header =
         (struct dnscrypt_query_header *)buf;
-    memcpy(nmkey, query_header->publickey, crypto_box_PUBLICKEYBYTES);
-    if (XCHACHA20_CERT(cert)) {
-#ifdef HAVE_CRYPTO_BOX_CURVE25519XCHACHA20POLY1305_OPEN_EASY
-        if (crypto_box_curve25519xchacha20poly1305_beforenm(nmkey, nmkey,
-                cert->keypair->crypt_secretkey) != 0) {
-            return -1;
-        }
-#endif
+    Cached *cached;
+
+    if (cache_get(&cached, query_header->publickey, XCHACHA20_CERT(cert))) {
+        memcpy(nmkey, cached->shared, crypto_box_BEFORENMBYTES);
     } else {
-        if (crypto_box_beforenm(nmkey, nmkey,
-                                cert->keypair->crypt_secretkey) != 0) {
-            return -1;
+        memcpy(nmkey, query_header->publickey, crypto_box_PUBLICKEYBYTES);
+        if (XCHACHA20_CERT(cert)) {
+#ifdef HAVE_CRYPTO_BOX_CURVE25519XCHACHA20POLY1305_OPEN_EASY
+            if (crypto_box_curve25519xchacha20poly1305_beforenm(nmkey, nmkey,
+                    cert->keypair->crypt_secretkey) != 0) {
+                return -1;
+            }
+#endif
+        } else {
+            if (crypto_box_beforenm(nmkey, nmkey,
+                    cert->keypair->crypt_secretkey) != 0) {
+                return -1;
+            }
         }
+        cache_set(nmkey, query_header->publickey, XCHACHA20_CERT(cert));
     }
 
     uint8_t nonce[crypto_box_NONCEBYTES];
