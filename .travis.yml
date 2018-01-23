@@ -20,5 +20,5 @@ script:
  - autoreconf -vi
  - ./configure
  - make
- - sudo ./.travis_setup.sh
+ - sudo ./hack/setup-travis.sh
  - cd tests && bundle install && make test
