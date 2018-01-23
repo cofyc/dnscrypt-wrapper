@@ -116,6 +116,7 @@ struct context {
     ev_socklen_t local_sockaddr_len;
     ev_socklen_t resolver_sockaddr_len;
     ev_socklen_t outgoing_sockaddr_len;
+    const char *ext_address;
     const char *resolver_address;
     const char *listen_address;
     const char *outgoing_address;
