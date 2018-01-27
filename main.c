@@ -202,6 +202,50 @@ read_from_file(const char *path, char *buf, size_t count)
 }
 
 static int
+filter_signed_certs(struct context *c)
+{
+    struct SignedCert *filtered_certs;
+    size_t filtered_count = 0;
+    size_t i, j;
+    uint32_t now = (uint32_t) time(NULL);
+    uint32_t ts_end, ts_begin;
+    bool found;
+
+    if ((filtered_certs = sodium_allocarray(c->signed_certs_count, sizeof *c->signed_certs)) == NULL) {
+        return -1;
+    }
+    for (i = 0; i < c->signed_certs_count; i++) {
+        memcpy(&ts_begin, c->signed_certs[i].ts_begin, 4);
+        memcpy(&ts_end, c->signed_certs[i].ts_end, 4);
+        ts_begin = ntohl(ts_begin);
+        ts_end = ntohl(ts_end);
+        if (now < ts_begin || ts_end <= now) {
+            continue;
+        }
+        found = 0;
+        for (j = 0; j < filtered_count; j++) {
+            if (filtered_certs[j].version_major[0] == c->signed_certs[i].version_major[0] &&
+                filtered_certs[j].version_major[1] == c->signed_certs[i].version_major[1] &&
+                filtered_certs[j].version_minor[0] == c->signed_certs[i].version_minor[0] &&
+                filtered_certs[j].version_minor[1] == c->signed_certs[i].version_minor[1]) {
+                found = 1;
+                if (filtered_certs[j].serial < c->signed_certs[i].serial) {
+                    filtered_certs[j] = c->signed_certs[i];
+                }
+            }
+        }
+        if (found == 0) {
+            filtered_certs[filtered_count++] = c->signed_certs[i];
+        }
+    }
+    sodium_free(c->signed_certs);
+    c->signed_certs = filtered_certs;
+    c->signed_certs_count = filtered_count;
+
+    return 0;
+}
+
+static int
 parse_cert_files(struct context *c)
 {
     char *provider_cert_files, *provider_cert_file;
@@ -210,7 +254,7 @@ parse_cert_files(struct context *c)
     c->signed_certs_count = 0U;
     if ((provider_cert_files = strdup(c->provider_cert_file)) == NULL) {
         logger(LOG_ERR, "Could not allocate memory!");
-        return 1;
+        return -1;
     }
 
     for (provider_cert_file = strtok(provider_cert_files, ",");
@@ -542,7 +586,7 @@ main(int argc, const char **argv)
         }
     }
     if (provider_publickey_dns_records) {
-        if (parse_cert_files(&c)) {
+        if (parse_cert_files(&c) || filter_signed_certs(&c)) {
             exit(1);
         }
         logger(LOG_NOTICE, "TXT record for signed-certificate:");
@@ -724,7 +768,14 @@ main(int argc, const char **argv)
     if (c.signed_certs_count <= 0U) {
         logger(LOG_ERR, "You must specify --provider-cert-file.\n\n");
         argparse_usage(&argparse);
-        exit(0);
+        exit(1);
+    }
+    if (filter_signed_certs(&c)) {
+        exit(1);
+    }
+    if (c.signed_certs_count <= 0U) {
+        logger(LOG_ERR, "No (currently) valid certs found.\n\n");
+        exit(1);
     }
 
     if (c.daemonize) {
