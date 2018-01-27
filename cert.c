@@ -18,6 +18,7 @@ cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days,
     signed_cert->version_minor[0] = 0;
     signed_cert->version_minor[1] = 0;
 
+    memset(signed_cert->signature, 0, sizeof signed_cert->signature);
     memcpy(signed_cert->server_publickey, crypt_publickey,
            crypto_box_PUBLICKEYBYTES);
     memcpy(signed_cert->magic_query, crypt_publickey,
@@ -35,7 +36,6 @@ cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days,
     memcpy(signed_cert->serial, &ts_begin, 4);
     memcpy(signed_cert->ts_begin, &ts_begin, 4);
     memcpy(signed_cert->ts_end, &ts_end, 4);
-    memset(signed_cert->end, 0, sizeof(signed_cert->end));
 
     return signed_cert;
 }
@@ -43,39 +43,13 @@ cert_build_cert(const uint8_t *crypt_publickey, int cert_file_expire_days,
 int
 cert_sign(struct SignedCert *signed_cert, const uint8_t *provider_secretkey)
 {
-    struct SignedCert cert;
-    unsigned long long crypted_signed_data_len = 0;
     unsigned long long signed_data_len =
         sizeof(struct SignedCert) - offsetof(struct SignedCert,
-                                             server_publickey) -
-        sizeof(signed_cert->end);
-    memcpy(&cert, signed_cert, sizeof cert);
-    if (crypto_sign_ed25519
-        (signed_cert->server_publickey,
-         &crypted_signed_data_len,
-         cert.server_publickey, signed_data_len,
-         provider_secretkey) != 0) {
-        return -1;
-    }
-    return 0;
-}
+                                             server_publickey);
 
-int
-cert_unsign(struct SignedCert *signed_cert, const uint8_t *provider_secretkey)
-{
-    unsigned long long crypted_signed_data_len = 0;
-    unsigned long long signed_data_len =
-        sizeof(struct SignedCert) - offsetof(struct SignedCert,
-                                             server_publickey) -
-        sizeof(signed_cert->end);
-    if (crypto_sign_ed25519_open
-        (signed_cert->server_publickey,
-         &crypted_signed_data_len,
-         signed_cert->server_publickey, signed_data_len,
-         provider_secretkey) != 0) {
-        return -1;
-    }
-    return 0;
+    return crypto_sign_detached(signed_cert->signature, NULL,
+                                signed_cert->server_publickey, signed_data_len,
+                                provider_secretkey);
 }
 
 void
