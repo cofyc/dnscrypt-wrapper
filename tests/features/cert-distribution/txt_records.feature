@@ -2,32 +2,52 @@ Feature: Test certs in TXT records
 
   Test if dnscrypt-wrapper returns the certificate in TXT records
 
-  Scenario: query provider-name, TXT record
-    """
-    check that we can serve 1 cert.
-    """
-    Given a running dnscrypt wrapper with options "--crypt-secretkey-file=keys1/1.key  --provider-cert-file=keys1/1.cert"
-    When a client asks dnscrypt-wrapper for "2.dnscrypt-cert.example.com" "TXT" record
-    Then dnscrypt-wrapper returns "keys1/1.cert"
-    Then dnscrypt-wrapper does not returns "keys2/1.cert"
-
   Scenario: query provider-name, TXT record, multiple certificates
     """
-    check that we can serve multiple certs.
+    Check that we can serve recent certificate.
     """
-    Given a running dnscrypt wrapper with options "--crypt-secretkey-file=keys1/1.key  --provider-cert-file=keys1/1.cert,keys2/1.cert"
+    # Generate a fresh cert.
+    Given a provider keypair
+    And a time limited secret key
+    When a xsalsa20 cert is generated
+    Then it is a xsalsa20 cert
+    Given a running dnscrypt wrapper with options "--crypt-secretkey-file=1.key  --provider-cert-file=1.cert,keys1/1.cert,keys2/1.cert"
     When a client asks dnscrypt-wrapper for "2.dnscrypt-cert.example.com" "TXT" record
-    Then dnscrypt-wrapper returns "keys1/1.cert"
-    Then dnscrypt-wrapper returns "keys2/1.cert"
+    Then dnscrypt-wrapper returns "1.cert"
+    Then dnscrypt-wrapper does not return "keys1/1.cert"
+    Then dnscrypt-wrapper does not return "keys2/1.cert"
+
+  Scenario: query provider-name, TXT record, multiple certificates and TCP resolver
+    """
+    Check that we can serve recent certificate over TCP.
+    """
+    # Generate a fresh cert.
+    Given a provider keypair
+    And a time limited secret key
+    When a xsalsa20 cert is generated
+    Then it is a xsalsa20 cert
+    Given a running dnscrypt wrapper with options "--crypt-secretkey-file=1.key  --provider-cert-file=1.cert,keys1/1.cert,keys2/1.cert"
+    And a tcp resolver
+    When a client asks dnscrypt-wrapper for "2.dnscrypt-cert.example.com" "TXT" record
+    Then dnscrypt-wrapper returns "1.cert"
+    Then dnscrypt-wrapper does not return "keys1/1.cert"
+    Then dnscrypt-wrapper does not return "keys2/1.cert"
 
   Scenario: query provider-name, TXT record, multiple esversion same key
     """
-    Check that we can serve multiple certs with different ES versions
+    Check that we can serve recent certs with different ES versions
     for the same key.
     """
-    Given a running dnscrypt wrapper with options "--crypt-secretkey-file=keys2/1.key  --provider-cert-file=keys2/1.cert,keys2/1.xchacha20.cert"
+    # Generate a fresh cert.
+    Given a provider keypair
+    And a time limited secret key
+    When a xsalsa20 cert is generated
+    Then it is a xsalsa20 cert
+    Given a running dnscrypt wrapper with options "--crypt-secretkey-file=1.key  --provider-cert-file=1.cert,keys1/1.cert,keys2/1.cert,keys2/1.xchacha20.cert"
     When a client asks dnscrypt-wrapper for "2.dnscrypt-cert.example.com" "TXT" record
-    Then dnscrypt-wrapper returns "keys2/1.cert"
+    Then dnscrypt-wrapper returns "1.cert"
+    Then dnscrypt-wrapper does not return "keys1/1.cert"
+    Then dnscrypt-wrapper does not return "keys2/1.cert"
     Then dnscrypt-wrapper returns "keys2/1.xchacha20.cert"
 
   Scenario: query provider-name, TXT record, key with no cert
@@ -37,16 +57,6 @@ Feature: Test certs in TXT records
     """
     Given a running dnscrypt wrapper with options "--crypt-secretkey-file=keys2/2.key  --provider-cert-file=keys2/1.cert,keys2/1.xchacha20.cert"
     Then dnscrypt-wrapper fails with "could not match secret key 1 with a certificate"
-
-  Scenario: query provider-name, TXT record, multiple certificates and TCP resolver
-    """
-    check that we can serve certs over TCP.
-    """
-    Given a running dnscrypt wrapper with options "--crypt-secretkey-file=keys1/1.key  --provider-cert-file=keys1/1.cert,keys2/1.cert"
-    And a tcp resolver
-    When a client asks dnscrypt-wrapper for "2.dnscrypt-cert.example.com" "TXT" record
-    Then dnscrypt-wrapper returns "keys1/1.cert"
-    Then dnscrypt-wrapper returns "keys2/1.cert"
 
   Scenario: query provider-name, A record
     """
