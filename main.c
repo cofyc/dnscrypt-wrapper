@@ -393,7 +393,7 @@ sodium_bin2base64(char * const b64, const size_t b64_maxlen,
 #endif
 
 static char *create_stamp(const char *ext_address, const unsigned char *provider_publickey,
-                          const char *provider_name, bool dnssec, bool nolog)
+                          const char *provider_name, bool dnssec, bool nolog, bool nofilter)
 {
     unsigned char *stamp_bin, *p;
     char *stamp;
@@ -406,7 +406,9 @@ static char *create_stamp(const char *ext_address, const unsigned char *provider
     if (dnssec)
         props[0] |= 1;
     if (nolog)
-        props[1] |= 2;
+        props[0] |= 2;
+    if (nofilter)
+        props[0] |= 4;
     len = 1 + 8 + 1 + ext_address_len + 1 + provider_publickey_len + 1 + provider_name_len;
     if ((stamp_bin = malloc(len)) == NULL)
         exit(1);
@@ -444,7 +446,7 @@ main(int argc, const char **argv)
     int provider_publickey_dns_records = 0;
     int verbose = 0;
     int use_xchacha20 = 0;
-    int nolog = 0, dnssec = 0;
+    int nolog = 0, dnssec = 0, nofilter = 0;
     struct argparse argparse;
     struct argparse_option options[] = {
         OPT_HELP(),
@@ -469,6 +471,7 @@ main(int argc, const char **argv)
                    "crypt secret key file (default: ./crypt_secret.key)"),
         OPT_INTEGER(0, "cert-file-expire-days", &cert_file_expire_days, "cert file expire days (default: 1)"),
         OPT_BOOLEAN(0, "nolog", &nolog, "Indicate that the server doesn't store logs"),
+        OPT_BOOLEAN(0, "nofilter", &nofilter, "Indicate that the server doesn't enforce its own blacklist"),
         OPT_BOOLEAN(0, "dnssec", &dnssec, "Indicate that the server supports DNSSEC"),
         OPT_STRING('a', "listen-address", &c.listen_address,
                    "local address to listen (default: 0.0.0.0:53)"),
@@ -531,6 +534,10 @@ main(int argc, const char **argv)
             fprintf(stderr,
                     "Warning: do not forget to add --nolog if your server doesn't store logs\n\n");
         }
+        if (!nofilter) {
+            fprintf(stderr,
+                    "Warning: do not forget to add --nofilter if your server doesn't intentionally block domains\n\n");
+        }
         if (!c.provider_name) {
             fprintf(stderr,
                     "Missing provider name. Ex: --provider-name=2.dnscrypt-cert.example.com\n");
@@ -549,7 +556,7 @@ main(int argc, const char **argv)
             char *stamp;
 
             puts(" ok.\n");
-            stamp = create_stamp(c.ext_address, provider_publickey, c.provider_name, dnssec, nolog);
+            stamp = create_stamp(c.ext_address, provider_publickey, c.provider_name, dnssec, nolog, nofilter);
             dnscrypt_key_to_fingerprint(fingerprint, provider_publickey);
 
             printf("Stamp for dnscrypt-proxy 2.x:\n"
