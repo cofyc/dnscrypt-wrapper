@@ -60,7 +60,7 @@ Then /^dnscrypt-wrapper fails with "(.*)"$/ do |error|
   expect(@error).to include(error)
 end
 
-Then /^dnscrypt\-wrapper does not returns "([^"]*)"$/ do |certfile|
+Then /^dnscrypt\-wrapper does not return "([^"]*)"$/ do |certfile|
   cert = open(certfile).read()
   expect(@answer_section.collect { |a| a.txt.strip().force_encoding('UTF-8') }).not_to include(cert)
 end
