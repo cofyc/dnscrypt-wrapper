@@ -57,8 +57,8 @@ cache_set(const uint8_t shared[crypto_box_BEFORENMBYTES],
 
 const dnsccert *
 find_cert(const struct context *c,
-             const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
-             const size_t dns_query_len)
+          const unsigned char magic_query[DNSCRYPT_MAGIC_HEADER_LEN],
+          const size_t dns_query_len)
 {
     const dnsccert *certs = c->certs;
     size_t i;
@@ -391,7 +391,7 @@ dnscrypt_server_curve(struct context *c, const dnsccert *cert,
  */
 int
 dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
-                     size_t *dns_query_len)
+                              size_t *dns_query_len)
 {
     unsigned char *p;
     unsigned char *ansp;
