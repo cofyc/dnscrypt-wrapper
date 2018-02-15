@@ -75,8 +75,6 @@
 
 #define crypto_box_HALF_NONCEBYTES (crypto_box_NONCEBYTES / 2U)
 
-#define DEFAULT_PROVIDER_NAME "2.cert.dnscrypt.org"
-
 #include "edns.h"
 #include "udp_request.h"
 #include "tcp_request.h"
