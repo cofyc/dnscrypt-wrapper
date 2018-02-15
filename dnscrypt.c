@@ -302,7 +302,7 @@ dnscrypt_server_uncurve(struct context *c, const dnsccert *cert,
     }
 
     len -= DNSCRYPT_QUERY_HEADER_SIZE;
-    while (buf[--len] == 0);
+    while (len > 0 && buf[--len] == 0);
     if (buf[len] != 0x80) {
         return -1;
     }
