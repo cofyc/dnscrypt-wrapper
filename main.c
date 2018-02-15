@@ -2,6 +2,8 @@
 #include "argparse/argparse.h"
 #include "version.h"
 #include "pidfile.h"
+#include "block.h"
+
 /**
  * This is dnscrypt wrapper (server-side dnscrypt proxy), which helps to add
  * dnscrypt support to any name resolver.
@@ -438,6 +440,7 @@ main(int argc, const char **argv)
     struct context c;
     memset(&c, 0, sizeof(struct context));
 
+    char *blacklist_file = NULL;
     int gen_provider_keypair = 0;
     int gen_crypt_keypair = 0;
     int gen_cert_file = 0;
@@ -475,6 +478,7 @@ main(int argc, const char **argv)
         OPT_BOOLEAN(0, "dnssec", &dnssec, "Indicate that the server supports DNSSEC"),
         OPT_STRING('a', "listen-address", &c.listen_address,
                    "local address to listen (default: 0.0.0.0:53)"),
+        OPT_STRING('b', "blacklist-file", &blacklist_file, "blacklist file"),
         OPT_STRING('E', "ext-address", &c.ext_address, "External IP address"),
         OPT_STRING('r', "resolver-address", &c.resolver_address,
                    "upstream dns resolver server (<address:port>)"),
@@ -747,6 +751,11 @@ main(int argc, const char **argv)
         exit(0);
     }
 
+    if (blacklist_file != NULL && blocking_init(&c, blacklist_file) != 0) {
+        logger(LOG_ERR, "Unable to load the blacklist file");
+        exit(1);
+    }
+
     c.udp_listener_handle = -1;
     c.udp_resolver_handle = -1;
 
@@ -838,6 +847,7 @@ main(int argc, const char **argv)
     udp_listener_stop(&c);
     tcp_listener_stop(&c);
     event_base_free(c.event_loop);
+    blocking_free(&c);
 
     return 0;
 }

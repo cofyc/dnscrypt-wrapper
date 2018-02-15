@@ -1,4 +1,5 @@
 #include "dnscrypt.h"
+#include "block.h"
 
 static void
 tcp_request_kill(TCPRequest *const tcp_request)
@@ -209,6 +210,9 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
             return;
         }
     }
+
+    tcp_request->is_blocked = is_blocked(c, header, dns_query_len);
+
     dns_curved_query_len_buf[0] = (dns_query_len >> 8) & 0xff;
     dns_curved_query_len_buf[1] = dns_query_len & 0xff;
     if (bufferevent_write(tcp_request->proxy_resolver_bev,
@@ -307,6 +311,10 @@ resolver_proxy_read_cb(struct bufferevent *const proxy_resolver_bev,
     size_t max_len =
         dns_reply_len + DNSCRYPT_MAX_PADDING + DNSCRYPT_REPLY_HEADER_SIZE;
 
+    if (tcp_request->is_blocked) {
+        struct dns_header *p = (struct dns_header *) dns_reply;
+        SET_RCODE(p, REFUSED);
+    }
     if (tcp_request->is_dnscrypted) {
         if (dnscrypt_server_curve(c, tcp_request->cert,
                                   tcp_request->client_nonce, tcp_request->nmkey,
@@ -526,4 +534,3 @@ tcp_listener_stop(struct context *c)
     }
     logger(LOG_INFO, "TCP listener shut down");
 }
-
