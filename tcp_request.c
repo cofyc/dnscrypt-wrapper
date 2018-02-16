@@ -113,7 +113,8 @@ static void
 client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
                      void *const tcp_request_)
 {
-    uint8_t dns_query[DNS_MAX_PACKET_SIZE_TCP - 2U];
+    const size_t sizeof_dns_query = DNS_MAX_PACKET_SIZE_TCP - 2U;
+    static uint8_t *dns_query = NULL;
     uint8_t dns_query_len_buf[2];
     uint8_t dns_curved_query_len_buf[2];
     TCPRequest *tcp_request = tcp_request_;
@@ -123,6 +124,9 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     size_t dns_query_len;
     size_t max_query_size;
 
+    if (dns_query == NULL && (dns_query = sodium_malloc(sizeof_dns_query)) == NULL) {
+        return;
+    }
     if (tcp_request->status.has_dns_query_len == 0) {
         debug_assert(evbuffer_get_length(input) >= (size_t) 2U);
         evbuffer_remove(input, dns_query_len_buf, sizeof dns_query_len_buf);
@@ -156,14 +160,14 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
         tcp_request_kill(tcp_request);
         return;
     }
-    debug_assert(dns_query_len <= sizeof dns_query);
+    debug_assert(dns_query_len <= sizeof_dns_query);
     if ((ssize_t) evbuffer_remove(tcp_request->proxy_resolver_query_evbuf,
                                   dns_query, dns_query_len)
         != (ssize_t) dns_query_len) {
         tcp_request_kill(tcp_request);
         return;
     }
-    max_query_size = sizeof dns_query;
+    max_query_size = sizeof_dns_query;
     debug_assert(max_query_size < DNS_MAX_PACKET_SIZE_TCP);
     debug_assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - DNSCRYPT_QUERY_HEADER_SIZE
               > dns_query_len);
@@ -177,7 +181,7 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
         return;
     }
     debug_assert(max_len <= DNS_MAX_PACKET_SIZE_TCP - 2U);
-    debug_assert(max_len <= sizeof dns_query);
+    debug_assert(max_len <= sizeof_dns_query);
     debug_assert(dns_query_len <= max_len);
 
     // decrypt if encrypted
@@ -275,9 +279,14 @@ resolver_proxy_read_cb(struct bufferevent *const proxy_resolver_bev,
     struct context *c = tcp_request->context;
     struct evbuffer *input = bufferevent_get_input(proxy_resolver_bev);
     size_t available_size;
-    uint8_t dns_reply[DNS_MAX_PACKET_SIZE_TCP - 2U];
+    const size_t sizeof_dns_reply = DNS_MAX_PACKET_SIZE_TCP - 2U;
+    static uint8_t *dns_reply = NULL;
     size_t dns_reply_len;
 
+    if (dns_reply == NULL && (dns_reply = sodium_malloc(sizeof_dns_reply)) == NULL) {
+        tcp_request_kill(tcp_request);
+        return;
+    }
     logger(LOG_DEBUG, "Resolver read callback.");
     if (tcp_request->status.has_dns_reply_len == 0) {
         debug_assert(evbuffer_get_length(input) >= (size_t) 2U);
