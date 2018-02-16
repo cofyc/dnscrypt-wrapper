@@ -237,6 +237,6 @@ int dnscrypt_server_curve(struct context *c, const dnsccert *cert,
  * */
 int dnscrypt_self_serve_cert_file(struct context *c,
                                   struct dns_header *header,
-                                  size_t *dns_query_len);
+                                  size_t *dns_query_len, size_t max_len);
 
 #endif

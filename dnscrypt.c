@@ -391,7 +391,7 @@ dnscrypt_server_curve(struct context *c, const dnsccert *cert,
  */
 int
 dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
-                              size_t *dns_query_len)
+                              size_t *dns_query_len, size_t max_len)
 {
     unsigned char *p;
     unsigned char *ansp;
@@ -438,7 +438,7 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
 
         for (int i=0; i < c->signed_certs_count; i++) {
             if (add_resource_record
-                (header, nameoffset, &ansp, 0, NULL, T_TXT, C_IN, "t", size,
+                (header, nameoffset, max_len, &ansp, 0, NULL, T_TXT, C_IN, "t", size,
                     *(txt + i))) {
                 anscount++;
             } else {

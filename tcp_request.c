@@ -88,10 +88,10 @@ tcp_listener_kill_oldest_request(struct context *c)
  */
 static int
 self_serve_cert_file(struct context *c, struct dns_header *header,
-                     size_t dns_query_len, TCPRequest *tcp_request)
+                     size_t dns_query_len, size_t max_len, TCPRequest *tcp_request)
 {
     uint8_t dns_query_len_buf[2];
-    if (dnscrypt_self_serve_cert_file(c, header, &dns_query_len) == 0) {
+    if (dnscrypt_self_serve_cert_file(c, header, &dns_query_len, max_len) == 0) {
         dns_query_len_buf[0] = (dns_query_len >> 8) & 0xff;
         dns_query_len_buf[1] = dns_query_len & 0xff;
         if (bufferevent_write(tcp_request->client_proxy_bev,
@@ -206,7 +206,7 @@ client_proxy_read_cb(struct bufferevent *const client_proxy_bev,
     struct dns_header *header = (struct dns_header *)dns_query;
     // self serve signed certificate for provider name?
     if (!tcp_request->is_dnscrypted) {
-        if (self_serve_cert_file(c, header, dns_query_len, tcp_request) == 0)
+        if (self_serve_cert_file(c, header, dns_query_len, sizeof_dns_query, tcp_request) == 0)
             return;
         if (!c->allow_not_dnscrypted) {
             logger(LOG_DEBUG, "Unauthenticated query received over TCP");

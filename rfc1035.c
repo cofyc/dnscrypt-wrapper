@@ -186,7 +186,7 @@ questions_hash(uint64_t *hash, struct dns_header *header, size_t plen,
         (name_len = strlen(name)) > MAXDNAME) {
         return -1;
     }
-    crypto_shorthash((unsigned char *) hash, name, name_len, key);
+    crypto_shorthash((unsigned char *) hash, (const unsigned char *) name, name_len, key);
 
     return 0;
 }
@@ -278,7 +278,7 @@ do_rfc1035_name(unsigned char *p, char *sval)
 }
 
 int
-add_resource_record(struct dns_header *header, unsigned int nameoffset,
+add_resource_record(struct dns_header *header, unsigned int nameoffset, size_t plen,
                     unsigned char **pp, unsigned long ttl, unsigned int *offset,
                     unsigned short type, unsigned short class, char *format,
                     ...)
@@ -290,6 +290,9 @@ add_resource_record(struct dns_header *header, unsigned int nameoffset,
     long           lval;
     char          *sval;
 
+    if (!CHECK_LEN(header, p, plen, 12)) {
+        return 0;
+    }
     PUTSHORT(nameoffset | 0xc000, p);
     PUTSHORT(type, p);
     PUTSHORT(class, p);
@@ -304,6 +307,9 @@ add_resource_record(struct dns_header *header, unsigned int nameoffset,
         switch (*format) {
 #ifdef HAVE_IPV6
         case '6':
+            if (!CHECK_LEN(header, p, plen, IN6ADDRSZ)) {
+                return 0;
+            }
             sval = va_arg(ap, char *);
             memcpy(p, sval, IN6ADDRSZ);
             p += IN6ADDRSZ;
@@ -311,17 +317,26 @@ add_resource_record(struct dns_header *header, unsigned int nameoffset,
 #endif
 
         case '4':
+            if (!CHECK_LEN(header, p, plen, INADDRSZ)) {
+                return 0;
+            }
             sval = va_arg(ap, char *);
             memcpy(p, sval, INADDRSZ);
             p += INADDRSZ;
             break;
 
         case 's':
+            if (!CHECK_LEN(header, p, plen, 2)) {
+                return 0;
+            }
             usval = va_arg(ap, int);
             PUTSHORT(usval, p);
             break;
 
         case 'l':
+            if (!CHECK_LEN(header, p, plen, 4)) {
+                return 0;
+            }
             lval = va_arg(ap, long);
             PUTLONG(lval, p);
             break;
@@ -338,6 +353,9 @@ add_resource_record(struct dns_header *header, unsigned int nameoffset,
         case 't':
             usval = va_arg(ap, int);
             sval  = va_arg(ap, char *);
+            if (!CHECK_LEN(header, p, plen, usval)) {
+                return 0;
+            }
             if (usval != 0) {
                 memcpy(p, sval, usval);
             }
@@ -350,6 +368,9 @@ add_resource_record(struct dns_header *header, unsigned int nameoffset,
             if (usval > 255) {
                 usval = 255;
             }
+            if (!CHECK_LEN(header, p, plen, (1 + usval))) {
+                return 0;
+            }
             *p++ = (unsigned char) usval;
             memcpy(p, sval, usval);
             p += usval;
@@ -359,6 +380,9 @@ add_resource_record(struct dns_header *header, unsigned int nameoffset,
     va_end(ap); /* clean up variable argument pointer */
 
     j = p - sav - 2;
+    if (!CHECK_LEN(header, sav, plen, 2)) {
+        return 0;
+    }
     PUTSHORT(j, sav); /* Now, store real RDLength */
 
     *pp = p;
