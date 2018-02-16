@@ -178,18 +178,15 @@ int
 questions_hash(uint64_t *hash, struct dns_header *header, size_t plen,
                char *name, const unsigned char key[crypto_shorthash_KEYBYTES])
 {
-    unsigned char  qb[MAXDNAME + 4];
     unsigned char *p = (unsigned char *) (header + 1);
     size_t         name_len;
 
     if (ntohs(header->qdcount) != 1 ||
         !extract_name(header, plen, &p, name, 1, 4) ||
-        (name_len = strlen(name)) > (sizeof qb - 4)) {
+        (name_len = strlen(name)) > MAXDNAME) {
         return -1;
     }
-    memcpy(qb, name, name_len);
-    memcpy(qb + name_len, p, 4);
-    crypto_shorthash((unsigned char *) hash, qb, name_len + 4ULL, key);
+    crypto_shorthash((unsigned char *) hash, name, name_len, key);
 
     return 0;
 }
