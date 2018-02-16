@@ -395,7 +395,6 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
 {
     unsigned char *p;
     unsigned char *ansp;
-    int q;
     int qtype;
     unsigned int nameoffset;
     p = (unsigned char *)(header + 1);
