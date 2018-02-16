@@ -30,7 +30,7 @@ Install [libsodium](https://github.com/jedisct1/libsodium) and [libevent](http:/
 On Linux:
 
     $ ldconfig # if you install libsodium from source
-    $ git clone --recursive git://github.com/cofyc/dnscrypt-wrapper.git
+    $ git clone git://github.com/cofyc/dnscrypt-wrapper.git
     $ cd dnscrypt-wrapper
     $ make configure
     $ ./configure
@@ -44,7 +44,7 @@ On OpenBSD:
 
     $ pkg_add -r gmake autoconf
     $ pkg_add -r libevent
-    $ git clone --recursive git://github.com/cofyc/dnscrypt-wrapper.git
+    $ git clone git://github.com/cofyc/dnscrypt-wrapper.git
     $ cd dnscrypt-wrapper
     $ gmake LDFLAGS='-L/usr/local/lib/' CFLAGS=-I/usr/local/include/
 
