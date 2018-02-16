@@ -234,9 +234,9 @@ timeout_timer_cb(evutil_socket_t timeout_timer_handle, short ev_flags,
  */
 static int
 self_serve_cert_file(struct context *c, struct dns_header *header,
-                     size_t dns_query_len, UDPRequest *udp_request)
+                     size_t dns_query_len, size_t max_len, UDPRequest *udp_request)
 {
-    if (dnscrypt_self_serve_cert_file(c, header, &dns_query_len) == 0) {
+    if (dnscrypt_self_serve_cert_file(c, header, &dns_query_len, max_len) == 0) {
             SendtoWithRetryCtx retry_ctx = {
                 .udp_request = udp_request,
                 .handle = udp_request->client_proxy_handle,
@@ -333,7 +333,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
 
     // self serve signed certificate for provider name?
     if (!udp_request->is_dnscrypted) {
-        if (self_serve_cert_file(c, header, dns_query_len, udp_request) == 0)
+        if (self_serve_cert_file(c, header, dns_query_len, sizeof_dns_query, udp_request) == 0)
             return;
         if (!c->allow_not_dnscrypted) {
             logger(LOG_DEBUG, "Unauthenticated query received over UDP");
