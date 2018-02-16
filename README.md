@@ -239,6 +239,19 @@ after the new one started.
 
 This also allows upgrades with zero downtime.
 
+## Blocking
+
+For servers willing to block specific domain names (ads, malware), the
+`--blacklist-file` parameter can be added. That blacklist file accepts
+patterns such as:
+
+- `example.com`: blocks `example.com` as well as `www.example.com`
+- `*.example.com`: identical, just more explicit
+- `*example*`: blocks the `example` substring no matter where it appears
+- `ads.*`: blocks the `ads.` prefix
+
+Prefix and suffix lookups are fast and can scale to very large lists.
+
 ## Chinese
 
 - CentOS/Debian/Ubuntu 下编译 dnscrypt-wrapper: http://03k.org/centos-make-dnscrypt-wrapper.html

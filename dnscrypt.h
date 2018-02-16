@@ -158,6 +158,9 @@ struct context {
     size_t keypairs_count;
     uint64_t nonce_ts_last;
     unsigned char hash_key[crypto_shorthash_KEYBYTES];
+
+    /* blocking */
+    struct Blocking_ *blocking;
 };
 
 const dnsccert * find_cert(const struct context *c,

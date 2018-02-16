@@ -1,5 +1,5 @@
-
 #include "dnscrypt.h"
+#include "block.h"
 
 typedef struct SendtoWithRetryCtx_ {
     void (*cb) (UDPRequest *udp_request);
@@ -337,6 +337,9 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
             return;
         }
     }
+
+    udp_request->is_blocked = is_blocked(c, header, dns_query_len);
+
     udp_request->id = ntohs(header->id);
     if (questions_hash(&udp_request->hash, header, dns_query_len, c->namebuff, c->hash_key) != 0) {
         logger(LOG_WARNING, "Received a suspicious query from the client");
@@ -471,6 +474,10 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
     if (max_len > max_reply_size)
         max_len = max_reply_size;
 
+    if (udp_request->is_blocked) {
+        struct dns_header *p = (struct dns_header *) dns_reply;
+        SET_RCODE(p, REFUSED);
+    }
     maybe_truncate(dns_reply, &dns_reply_len, udp_request->len);
 
     if (udp_request->is_dnscrypted) {
