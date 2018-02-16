@@ -261,6 +261,6 @@ Prefix and suffix lookups are fast and can scale to very large lists.
 
 ## See also
 
-- https://dnscrypt.org/
+- https://dnscrypt.info/
 - https://github.com/jedisct1/dnscrypt-proxy
 - https://github.com/cofyc/dnscrypt-wrapper
