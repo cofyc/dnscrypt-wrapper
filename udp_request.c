@@ -258,12 +258,16 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
                    void *const context)
 {
     logger(LOG_DEBUG, "client to proxy cb");
-    uint8_t dns_query[DNS_MAX_PACKET_SIZE_UDP];
+    const size_t sizeof_dns_query = DNS_MAX_PACKET_SIZE_UDP;
+    static uint8_t *dns_query = NULL;
     struct context *c = context;
     UDPRequest *udp_request;
     ssize_t nread;
     size_t dns_query_len = 0;
 
+    if (dns_query == NULL && (dns_query = sodium_malloc(sizeof_dns_query)) == NULL) {
+        return;
+    }
     (void)ev_flags;
     assert(client_proxy_handle == c->udp_listener_handle);
 
@@ -279,7 +283,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     memset(&udp_request->status, 0, sizeof(udp_request->status));
     nread = recvfrom(client_proxy_handle,
                      (void *)dns_query,
-                     sizeof(dns_query),
+                     sizeof_dns_query,
                      0,
                      (struct sockaddr *)&udp_request->client_sockaddr,
                      &udp_request->client_sockaddr_len);
@@ -293,14 +297,14 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
         return;
     }
 
-    if (nread < (ssize_t) DNS_HEADER_SIZE || nread > sizeof(dns_query)) {
+    if (nread < (ssize_t) DNS_HEADER_SIZE || nread > sizeof_dns_query) {
         logger(LOG_WARNING, "Short query received");
         udp_request_kill(udp_request);
         return;
     }
 
     dns_query_len = (size_t) nread;
-    assert(dns_query_len <= sizeof(dns_query));
+    assert(dns_query_len <= sizeof_dns_query);
 
     assert(SIZE_MAX - DNSCRYPT_MAX_PADDING - DNSCRYPT_QUERY_HEADER_SIZE >
            dns_query_len);
@@ -422,7 +426,8 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
                      void *const context)
 {
     logger(LOG_DEBUG, "resolver to proxy cb");
-    uint8_t dns_reply[DNS_MAX_PACKET_SIZE_UDP];
+    const size_t sizeof_dns_reply = DNS_MAX_PACKET_SIZE_UDP;
+    static uint8_t *dns_reply = NULL;
     struct context *c = context;
     UDPRequest *udp_request = NULL;
     struct sockaddr_storage resolver_sockaddr;
@@ -431,9 +436,11 @@ resolver_to_proxy_cb(evutil_socket_t proxy_resolver_handle, short ev_flags,
     size_t dns_reply_len = (size_t) 0U;
 
     (void)ev_flags;
-
+    if (dns_reply == NULL && (dns_reply = sodium_malloc(sizeof_dns_reply)) == NULL) {
+        return;
+    }
     nread = recvfrom(proxy_resolver_handle,
-                     (void *)dns_reply, sizeof(dns_reply), 0,
+                     (void *)dns_reply, sizeof_dns_reply, 0,
                      (struct sockaddr *)&resolver_sockaddr,
                      &resolver_sockaddr_len);
     if (nread < 0) {
