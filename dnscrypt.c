@@ -400,11 +400,15 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
     unsigned int nameoffset;
     p = (unsigned char *)(header + 1);
     int anscount = 0;
+
+    if (ntohs(header->qdcount) != 1) {
+        return -1;
+    }
     /* determine end of questions section (we put answers there) */
     if (!(ansp = skip_questions(header, *dns_query_len))) {
         return -1;
     }
-    for (q = ntohs(header->qdcount); q != 0; q--) {
+    do {
         /* save pointer to name for copying into answers */
         nameoffset = p - (unsigned char *)header;
 
@@ -456,7 +460,7 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
 
             return 0;
           }
-    }
+    } while (0);
     return -1;
 }
 
