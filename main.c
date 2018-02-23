@@ -231,7 +231,7 @@ filter_signed_certs(struct context *c)
                 filtered_certs[j].version_minor[0] == c->signed_certs[i].version_minor[0] &&
                 filtered_certs[j].version_minor[1] == c->signed_certs[i].version_minor[1]) {
                 found = 1;
-                if (filtered_certs[j].serial < c->signed_certs[i].serial) {
+                if (ntohl(*(uint32_t *)filtered_certs[j].serial) < ntohl(*(uint32_t *)c->signed_certs[i].serial)) {
                     filtered_certs[j] = c->signed_certs[i];
                 }
             }
@@ -295,6 +295,7 @@ match_cert_to_keys(struct context *c) {
     size_t keypair_id, signed_cert_id, cert_id;
 
     c->certs = sodium_allocarray(c->signed_certs_count, sizeof *c->certs);
+    c->certs_count = c->signed_certs_count;
     cert_id = 0U;
 
     for(keypair_id=0; keypair_id < c->keypairs_count; keypair_id++) {
