@@ -39,9 +39,9 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  aruba
-  cucumber
-  net-dns
+  aruba (~> 0.14.2)
+  cucumber (~> 2.4.0)
+  net-dns (~> 0.8.0)
 
 BUNDLED WITH
    1.13.6

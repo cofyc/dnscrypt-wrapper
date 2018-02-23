@@ -444,7 +444,7 @@ main(int argc, const char **argv)
     int gen_provider_keypair = 0;
     int gen_crypt_keypair = 0;
     int gen_cert_file = 0;
-    int cert_file_expire_days = CERT_FILE_EXPIRE_DAYS;
+    char *cert_file_expire_days = NULL;
     int provider_publickey = 0;
     int provider_publickey_dns_records = 0;
     int verbose = 0;
@@ -472,7 +472,7 @@ main(int argc, const char **argv)
                    "provider secret key file (default: ./secret.key)"),
         OPT_STRING(0, "crypt-secretkey-file", &c.crypt_secretkey_file,
                    "crypt secret key file (default: ./crypt_secret.key)"),
-        OPT_INTEGER(0, "cert-file-expire-days", &cert_file_expire_days, "cert file expire days (default: 1)"),
+        OPT_STRING(0, "cert-file-expire-days", &cert_file_expire_days, "cert file expire days (default: 1, 3d, 2h, 180s)"),
         OPT_BOOLEAN(0, "nolog", &nolog, "Indicate that the server doesn't store logs"),
         OPT_BOOLEAN(0, "nofilter", &nofilter, "Indicate that the server doesn't enforce its own blacklist"),
         OPT_BOOLEAN(0, "dnssec", &dnssec, "Indicate that the server supports DNSSEC"),
@@ -719,9 +719,16 @@ main(int argc, const char **argv)
                    c.provider_publickey_file, c.provider_secretkey_file);
             exit(1);
         }
-        logger(LOG_NOTICE, "Generating pre-signed certificate.");
+        int cert_file_expire_seconds = CERT_FILE_EXPIRE_DAYS * 24 * 3600;
+        if (cert_file_expire_days != NULL) {
+           if (seconds_from_string(cert_file_expire_days, &cert_file_expire_seconds) != 0) {
+               logger(LOG_ERR, "Unable to parse expire time string: %s", cert_file_expire_days);
+               exit(1);
+           }
+        }
+        logger(LOG_NOTICE, "Generating pre-signed certificate (expire in %d seconds).", cert_file_expire_seconds);
         struct SignedCert *signed_cert =
-            cert_build_cert(c.keypairs->crypt_publickey, cert_file_expire_days, use_xchacha20);
+            cert_build_cert(c.keypairs->crypt_publickey, cert_file_expire_seconds, use_xchacha20);
         if (!signed_cert || cert_sign(signed_cert, c.provider_secretkey) != 0) {
             logger(LOG_NOTICE, "Failed.");
             exit(1);
@@ -792,6 +799,14 @@ main(int argc, const char **argv)
     if (c.signed_certs_count <= 0U) {
         logger(LOG_ERR, "No (currently) valid certs found.\n\n");
         exit(1);
+    }
+    for (int i = 0; i < c.signed_certs_count; i++) {
+        uint32_t ts_end, ts_begin;
+        memcpy(&ts_begin, c.signed_certs[i].ts_begin, 4);
+        memcpy(&ts_end, c.signed_certs[i].ts_end, 4);
+        ts_begin = ntohl(ts_begin);
+        ts_end = ntohl(ts_end);
+        logger(LOG_INFO, "Signed certs %d valid from %d to %d", i, ts_begin, ts_end);
     }
 
     if (c.daemonize) {

@@ -405,16 +405,17 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
     }
     /* determine end of questions section (we put answers there) */
     if (!(ansp = skip_questions(header, *dns_query_len))) {
-        return -1;
+        return -2;
     }
 
     /* save pointer to name for copying into answers */
     nameoffset = p - (unsigned char *)header;
 
     if (!extract_name(header, *dns_query_len, &p, c->namebuff, 1, 4)) {
-        return -1;
+        return -3;
     }
     GETSHORT(qtype, p);
+    logger(LOG_DEBUG, "qtype: %d, c->provider_name: %s, c->namebuff: %s", qtype, c->provider_name, c->namebuff);
     if (qtype == T_TXT && strcasecmp(c->provider_name, c->namebuff) == 0) {
         // reply with signed certificate
         const size_t size = 1 + sizeof(struct SignedCert);
@@ -424,13 +425,13 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
         // This is only called once the first time a TXT request is made.
         if(!txt) {
             txt = calloc(c->signed_certs_count, sizeof(uint8_t *));
-            if(!txt) {
-                return -1;
+            if (!txt) {
+                return -4;
             }
             for (int i=0; i < c->signed_certs_count; i++) {
                 *(txt + i) = malloc(size);
                 if (!*(txt + i))
-                    return -1;
+                    return -5;
                 **(txt + i) = sizeof(struct SignedCert);
                 memcpy(*(txt + i) + 1, c->signed_certs + i, sizeof(struct SignedCert));
             }
@@ -442,7 +443,7 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
                     *(txt + i))) {
                 anscount++;
             } else {
-                return -1;
+                return -6;
             }
         }
         /* done all questions, set up header and return length of result */
@@ -460,6 +461,6 @@ dnscrypt_self_serve_cert_file(struct context *c, struct dns_header *header,
         return 0;
     }
 
-    return -1;
+    return -7;
 }
 

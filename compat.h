@@ -40,8 +40,8 @@
 #include <netinet/tcp.h>
 #include <netinet/in.h>
 
-#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[1]))
-#define COMPILER_ASSERT(X) (void) sizeof(char[(X) ? 1 : -1])
+#define ARRAY_SIZE(x)      (sizeof(x) / sizeof(x[1]))
+#define COMPILER_ASSERT(X) (void)sizeof(char[(X) ? 1 : -1])
 
 /* Test for backtrace() */
 #if defined(__APPLE__) || (defined(__linux__) && defined(__GLIBC__))
@@ -57,5 +57,48 @@
 #elif !defined(__NetBSD__)
 #define _XOPEN_SOURCE
 #endif
+
+// It converts <x>[dhms] to seconds.
+// If format is invalid, or x is not a positive integer, returns -1.
+static inline int
+seconds_from_string(char *s, int *seconds)
+{
+    int x   = 0;
+    char *p = s;
+    int mul = 24 * 3600;
+    while (*p != '\0') {
+        if (isdigit(*p)) {
+            p++;
+            continue;
+        } else {
+            if (*p == 'd') {
+                mul = 24 * 3600;
+                break;
+            } else if (*p == 'h') {
+                mul = 3600;
+                break;
+            } else if (*p == 'm') {
+                mul = 60;
+                break;
+            } else if (*p == 's') {
+                mul = 1;
+                break;
+            } else {
+                return -1;
+            }
+        }
+    }
+    // *p or *(p+1) should be '\0'.
+    if (*p != '\0' && *(p + 1) != '\0') {
+        return -2;
+    }
+    errno = 0;
+    x     = strtol(s, NULL, 10);
+    if (errno != 0) {
+        return -3;
+    }
+    *seconds = x * mul;
+    return 0;
+}
 
 #endif
