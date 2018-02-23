@@ -18,7 +18,6 @@ After do
   cleanup
 end
 
-
 Given /^a provider keypair$/ do
   str = DNSCW + " --gen-provider-keypair --provider-name=2.dnscrypt-cert.example.org --ext-address=127.0.0.1"
   `#{str}`

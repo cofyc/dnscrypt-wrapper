@@ -236,21 +236,23 @@ static int
 self_serve_cert_file(struct context *c, struct dns_header *header,
                      size_t dns_query_len, size_t max_len, UDPRequest *udp_request)
 {
-    if (dnscrypt_self_serve_cert_file(c, header, &dns_query_len, max_len) == 0) {
-            SendtoWithRetryCtx retry_ctx = {
-                .udp_request = udp_request,
-                .handle = udp_request->client_proxy_handle,
-                .buffer = header,
-                .length = dns_query_len,
-                .flags = 0,
-                .dest_addr = (struct sockaddr *)&udp_request->client_sockaddr,
-                .dest_len = udp_request->client_sockaddr_len,
-                .cb = udp_request_kill
-            };
-            sendto_with_retry(&retry_ctx);
-            return 0;
+    int ret = dnscrypt_self_serve_cert_file(c, header, &dns_query_len, max_len);
+    if (ret == 0) {
+        SendtoWithRetryCtx retry_ctx = {
+            .udp_request = udp_request,
+            .handle = udp_request->client_proxy_handle,
+            .buffer = header,
+            .length = dns_query_len,
+            .flags = 0,
+            .dest_addr = (struct sockaddr *)&udp_request->client_sockaddr,
+            .dest_len = udp_request->client_sockaddr_len,
+            .cb = udp_request_kill
+        };
+        sendto_with_retry(&retry_ctx);
+        return 0;
     }
-    return -1;
+    logger(LOG_DEBUG, "failed to serve cert file, err: %d", ret);
+    return ret;
 }
 
 static void

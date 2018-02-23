@@ -793,6 +793,14 @@ main(int argc, const char **argv)
         logger(LOG_ERR, "No (currently) valid certs found.\n\n");
         exit(1);
     }
+    for (int i = 0; i < c.signed_certs_count; i++) {
+        uint32_t ts_end, ts_begin;
+        memcpy(&ts_begin, c.signed_certs[i].ts_begin, 4);
+        memcpy(&ts_end, c.signed_certs[i].ts_end, 4);
+        ts_begin = ntohl(ts_begin);
+        ts_end = ntohl(ts_end);
+        logger(LOG_INFO, "Signed certs %d valid from %d to %d", i, ts_begin, ts_end);
+    }
 
     if (c.daemonize) {
         do_daemonize();

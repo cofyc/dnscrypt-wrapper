@@ -1,4 +1,3 @@
-
 require 'net/dns'
 require 'net/dns/resolver'
 
