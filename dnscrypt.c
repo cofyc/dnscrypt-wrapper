@@ -66,7 +66,7 @@ find_cert(const struct context *c,
     if (dns_query_len <= DNSCRYPT_QUERY_HEADER_SIZE) {
         return NULL;
     }
-    for (i = 0U; i < c->signed_certs_count; i++) {
+    for (i = 0U; i < c->certs_count; i++) {
         if (memcmp(certs[i].magic_query, magic_query, DNSCRYPT_MAGIC_HEADER_LEN) == 0) {
             return &certs[i];
         }
