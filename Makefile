@@ -207,6 +207,9 @@ install: all
 uninstall:
 	$(RM) $(sbindir)/dnscrypt-wrapper
 
+test:
+	make -C tests
+
 clean:
 	$(RM) dnscrypt-wrapper
 	$(RM) $(LIB_OBJS)
