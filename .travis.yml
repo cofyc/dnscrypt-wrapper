@@ -2,17 +2,13 @@ language: c
 compiler:
  - clang
  - gcc
-before_install:
- - $CC --version
- - which $CC
- # workaround clang not system wide, fail on sudo make install
- - export CC=`which $CC`
 before_script:
  - sudo apt-get install libevent-dev
  - git clone git://github.com/jedisct1/libsodium.git
  - cd libsodium
  - ./autogen.sh
  - ./configure --disable-dependency-tracking
+ - make
  - sudo make install
  - sudo ldconfig
  - cd ..
