@@ -300,7 +300,7 @@ client_to_proxy_cb(evutil_socket_t client_proxy_handle, short ev_flags,
     }
 
     if (nread < (ssize_t) DNS_HEADER_SIZE || nread > sizeof_dns_query) {
-        logger(LOG_WARNING, "Short query received");
+        logger(LOG_DEBUG, "Short query received");
         udp_request_kill(udp_request);
         return;
     }
