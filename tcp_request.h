@@ -6,7 +6,7 @@
 #define DNS_MAX_PACKET_SIZE_TCP (65535U + 2U)
 
 #ifndef TCP_REQUEST_BACKLOG
-# define TCP_REQUEST_BACKLOG 128
+# define TCP_REQUEST_BACKLOG -1
 #endif
 
 struct context;
